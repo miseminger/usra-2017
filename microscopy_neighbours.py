@@ -2,19 +2,23 @@
 
 """
 Author: Cindy Tan
-Last Modified Date: 15 June 2017
+Last Modified Date: 27 June 2017
 
 Processes a MATLAB simulation csv file and determines cell neighbours at a specific timeframe
 Arguments:
-    -c CellProfiler: add flag if data is from CellProfiler (as opposed to MATLAB, default)
+    -C CellProfiler: add flag if data is from CellProfiler (as opposed to MATLAB, default)
     -g, -r: path to green and red CSV files (at least one file must be provided)
     -t timeframe: time at which cells are analyzed, specified as frame number
     -m or -p: radius in microns or pixels
-    -d print distance: add flag if graph should be annotated with distances
+    -c cluster cells: add flag if cells should be clustered and results shown on graph
     -o overlay: add flag if graph should be overlaid on a background image (provide image path as argument)
+    -d print distance: add flag if graph should be annotated with distances
 Output: determines cell neighbours from radius, produces a graph of cells and neighbours and histogram of # of cells vs.
 # of neighbours, saves both images
 """
+
+from datetime import datetime
+start_time = datetime.now()
 
 import os
 import sys
@@ -23,9 +27,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from PIL import Image
+from PIL import Image, ImageMath
 from optparse import OptionParser
 from graphviz import Graph
+from sklearn.cluster import DBSCAN
 
 # Options parsing
 usage = '%prog options\n  > at least one file (-r/-g) must be specified\n  > exactly one radius parameter (-m/-p)' \
@@ -36,8 +41,9 @@ parser.add_option('-r', type='string', dest='red_file', help='path to red CSV fi
 parser.add_option('-t', type='int', dest='time', help='timeframe at which cells are analyzed')
 parser.add_option('-m', type='string', dest='radius_m', help='radius in microns')
 parser.add_option('-p', type='string', dest='radius_p', help='radius in pixels')
-parser.add_option('-c', action='store_true', dest='cp', help='use CellProfiler file instead of MATLAB')
+parser.add_option('-C', action='store_true', dest='cp', help='use CellProfiler file instead of MATLAB')
 parser.add_option('-d', action='store_true', dest='printdist', help='print distance on edges')
+parser.add_option('-c', action='store_true', dest='cluster', help='cluster cells')
 parser.add_option('-o', type='string', dest='overlay', help='use graph as overlay, argument is path to background image file')
 
 (options, args) = parser.parse_args()
@@ -63,24 +69,33 @@ if not(options.green_file or options.red_file):
 if not(options.time):
     error = 1
     print 'Error: no timeframe specified, use -t'
+if options.overlay:
+    overlay = options.overlay.split(',')
+    if len(overlay) > 2:
+        error = 1
+        print 'Error: too many image files for overlay'
 if error:
     sys.exit('Use -h for options usage help')
 
-# Store output information in a string
-if options.green_file and options.red_file:
-    info = '_r' + str(int(radius)) + '_t' + str(options.time)
+
+# Store input information in a string
+if options.cp:
+    info = '_CP'
 else:
+    info = '_ML'
+if not(options.green_file and options.red_file):
     if options.green_file:
-        info = '_green_r' + str(int(radius)) + '_t' + str(options.time)
+        info += '_green'
     else:
-        info = '_red_r' + str(int(radius)) + '_t' + str(options.time)
+        info += '_red'
+info += '_r' + str(int(radius)) + '_t' + str(options.time)
 
 # Build directory to contain outputs
-directory = 'microscopy_neighbours' + info
+directory = 'neighbours' + info
 directory_i = 0
 while os.path.exists(directory):
     directory_i += 1
-    directory = 'microscopy_neighbours' + info + '_' + str(directory_i)
+    directory = 'neighbours' + info + '_' + str(directory_i)
 os.makedirs(directory)
 
 # Data extraction
@@ -95,7 +110,7 @@ def parse_csv(file):
     try:
         indices = np.where(df[frame_col] == options.time)[0]
     except KeyError:
-        sys.exit('Error: could not parse CSV, use -c if file is for CellProfiler (MATLAB files are default)\n'
+        sys.exit('Error: could not parse CSV, use -C if file is for CellProfiler (MATLAB files are default)\n'
                  'Use -h for options usage help')
     df = df[indices[0]:indices[-1] + 1][data_cols]
     df.columns = ['Cell', 'X', 'Y']
@@ -113,9 +128,72 @@ else:
         data = parse_csv(options.red_file)
         split = 0
 
-count = np.zeros(data.shape[0])
+# Collect data for histogram and clustering
+def cell_type(index, out='int'):
+    if index < split:
+        if out == 'str':
+            return 'G'
+        if out == 'int':
+            return 1
+        if out == 'hex':
+            return greenf
+    else:
+        if out == 'str':
+            return 'R'
+        if out == 'int':
+            return 2
+        if out == 'hex':
+            return redf
 
-# Graphviz setup
+def cell_name(index):
+    return cell_type(index, 'str') + str(int(data.iloc[index]['Cell']))
+
+degrees = np.zeros(data.shape[0])
+cell_positions = np.empty((2, data.shape[0]))
+cell_neighbours = np.empty(data.shape[0], dtype=object)
+
+i = 0
+while i < data.shape[0]:
+
+    cell_positions[0, i], cell_positions[1, i] = data.iloc[i]['X'] * microns_per_pixel, \
+                                                 data.iloc[i]['Y'] * microns_per_pixel
+    x, y = cell_positions[0, i], cell_positions[1, i]
+    cell_neighbours[i] = []
+
+    ni = i + 1
+    while ni < data.shape[0]:
+        nx, ny = data.iloc[ni]['X'] * microns_per_pixel, data.iloc[ni]['Y'] * microns_per_pixel
+        distance = math.sqrt((x - nx)**2 + (y - ny)**2)
+
+        if distance < float(radius):
+            cell_neighbours[i].append(ni)
+
+            degrees[i] += 1
+            degrees[ni] += 1
+        ni += 1
+    i += 1
+
+# Clustering
+if options.cluster:
+    min_pts = int(math.ceil(np.mean(degrees))) + 1
+
+    db = DBSCAN(eps=radius, min_samples=min_pts).fit(np.transpose(cell_positions))
+
+    num_colors = 12
+
+    labels = db.labels_
+
+    label_i = 0
+    while label_i < len(db.labels_):
+        label = labels[label_i]
+        if label == -1:
+            label = 0
+        else:
+            label = label % num_colors + 1
+        labels[label_i] = label
+        label_i += 1
+
+# Generate graph image
 scale = 0.025
 
 redf = '#FF9090'
@@ -125,72 +203,55 @@ greenl = '#019A2F'
 
 g = Graph(name='cellgraph' + info, format='png', engine='neato')
 
-g.attr('node', pin='true', shape='circle', style='filled', width='0.5', fixedsize='true', fontname='courier')
+g.attr('node', pin='true', shape='circle', width='0.5', fixedsize='true', style='filled', penwidth='3',
+       colorscheme='set312', fontname='courier', fontsize='10.0')
 g.attr('edge', fontsize='10.0', penwidth='2', fontname='courier')
 
-# Create graph and collect histogram data
 i = 0
 while i < data.shape[0]:
-    def cell_type(index, out='int'):
-        if index < split:
-            if out == 'str':
-                return 'G'
-            if out == 'int':
-                return 1
-            if out == 'hex':
-                return greenf
-        else:
-            if out == 'str':
-                return 'R'
-            if out == 'int':
-                return 2
-            if out == 'hex':
-                return redf
-
-    def cell_name(index):
-        return cell_type(index, 'str') + str(int(data.iloc[index]['Cell']))
-
-    x, y = data.iloc[i]['X'] * microns_per_pixel, data.iloc[i]['Y'] * microns_per_pixel
+    x, y = cell_positions[0, i], cell_positions[1, i]
     position = str(x * scale) + ',' + str(y * scale * -1)
 
-    g.node(cell_name(i), pos=position, fillcolor=cell_type(i, 'hex'))
+    if options.cluster:
+        note = '\nC' + str(db.labels_[i])
+        if labels[i] == 0:
+            fill = 'white'
+        else:
+            fill = str(labels[i])
+    else:
+        note = ''
+        fill = cell_type(i, 'hex')
 
-    ni = i + 1
-    while ni < data.shape[0]:
-        nx, ny = data.iloc[ni]['X'] * microns_per_pixel, data.iloc[ni]['Y'] * microns_per_pixel
-        distance = math.sqrt((x - nx)**2 + (y - ny)**2)
+    g.node(cell_name(i), label=cell_name(i) + note, pos=position, color=cell_type(i, 'hex'),
+           fillcolor=fill)
 
-        if distance < float(radius):
-            # print cell_name(ni),
-            if cell_type(i) == cell_type(ni):
-                lcolor = cell_type(i, 'hex')
-            else:
-                lcolor = 'black'
+    for ni in cell_neighbours[i]:
+        if cell_type(i) == cell_type(ni):
+            lcolor = cell_type(i, 'hex')
+        else:
+            lcolor = 'black'
 
-            label = ''
-            if printdist:
-                label = str(round(distance, 2))
-            g.edge(cell_name(i), cell_name(ni), color=lcolor, label=label)
+        label = ''
+        if printdist:
+            label = str(round(distance, 2))
 
-            count[i] += 1
-            count[ni] += 1
-
-        ni += 1
-
+        g.edge(cell_name(i), cell_name(ni), color=lcolor, label=label)
     i += 1
 
-# Generate graph image
 g.render(directory + '/cellgraph' + info + '.gv')
 
 # Plot and generate histogram image
-count = np.split(count, [split])
+degrees_split = np.split(degrees, [split])
 
-plt.hist([count[0], count[1]], np.arange(min(np.concatenate((count[0], count[1]))) - 0.5,
-                                         max(np.concatenate((count[0], count[1]))) + 1.5, 1),
+plt.figure()
+plt.hist([degrees_split[0], degrees_split[1]],
+         np.arange(min(np.concatenate((degrees_split[0], degrees_split[1]))) - 0.5,
+                   max(np.concatenate((degrees_split[0], degrees_split[1]))) + 1.5, 1),
          lw=0, color=[greenf, redf], label=['Green', 'Red'])
 plt.legend()
-plt.xticks(np.arange(0, max(np.concatenate((count[0], count[1]))) + 1, 1))
-plt.xlim([min(np.concatenate((count[0], count[1]))) - 0.5, max(np.concatenate((count[0], count[1]))) + 0.5])
+plt.xticks(np.arange(0, max(np.concatenate((degrees_split[0], degrees_split[1]))) + 1, 1))
+plt.xlim([min(np.concatenate((degrees_split[0], degrees_split[1]))) - 0.5,
+          max(np.concatenate((degrees_split[0], degrees_split[1]))) + 0.5])
 plt.xlabel('# of neighbours')
 plt.ylabel('# of cells')
 plt.axes().yaxis.grid()
@@ -198,13 +259,24 @@ plt.savefig(directory + '/neighbourhist' + info + '.png')
 
 # Overlay image
 if options.overlay:
-    image = Image.open(options.overlay)
+    if len(overlay) == 1:
+        image = Image.open(overlay[0])
+    else:
+        image0 = Image.open(overlay[0])
+        image1 = Image.open(overlay[1])
+
+        r0, g0, b0 = image0.split()[0], image0.split()[1], image0.split()[2]
+        r1, g1, b1 = image1.split()[0], image1.split()[1], image1.split()[2]
+
+        r, g, b = ImageMath.eval('convert(max(a, b), "L")', a=r0, b=r1), \
+                  ImageMath.eval('convert(max(a, b), "L")', a=g0, b=g1), \
+                  ImageMath.eval('convert(max(a, b), "L")', a=b0, b=b1)
+
+        image = Image.merge('RGB', (r, g, b))
     graph = Image.open(directory + '/cellgraph' + info + '.gv.png')
     ratio = float(image.size[0]) / image.size[1]
 
     image = image.resize((int(round(graph.size[1] * ratio)), graph.size[1]))
-
-    mask = Image.new('L', graph.size, color=0)
 
     bands = list(graph.split())
     if len(bands) == 3:
@@ -212,8 +284,20 @@ if options.overlay:
         graph.putalpha(mask)
         bands = list(graph.split())
     else:
-        bands[3] = bands[3].point(lambda x: x * 0.5)
+        bands[3] = bands[3].point(lambda x: x * 0.65)
     graph = Image.merge(graph.mode, bands)
     image.paste(graph, (0, 0), graph)
 
     image.save(directory + '/cellgraph_overlay' + info + '.png')
+
+# Script complete text
+print '\nOutput folder created: ' + directory
+runtime = str(datetime.now() - start_time).split(':')
+if float(runtime[0]) == 0:
+    if float(runtime[1]) == 0:
+        runtime = str(round(float(runtime[2]), 3)) + 's'
+    else:
+        runtime = runtime[1] + 'm ' + str(round(float(runtime[2]), 3)) + 's'
+else:
+    runtime = runtime[0] + 'h ' + runtime[1] + 'm ' + str(round(float(runtime[2]), 3)) + 's'
+print 'Runtime: ' + runtime + '\n'
