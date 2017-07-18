@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/python2
 
 """
 Author: Cindy Tan
-Last Modified Date: 27 June 2017
+Last Modified Date: 18 July 2017
 
 Processes a MATLAB simulation csv file and determines cell neighbours at a specific timeframe
 Arguments:
@@ -13,8 +13,15 @@ Arguments:
     -c cluster cells: add flag if cells should be clustered and results shown on graph
     -o overlay: add flag if graph should be overlaid on a background image (provide image path as argument)
     -d print distance: add flag if graph should be annotated with distances
-Output: determines cell neighbours from radius, produces a graph of cells and neighbours and histogram of # of cells vs.
-# of neighbours, saves both images
+Outputs:
+    - histogram of total neighbours of red and green cells
+    - csv file of total, green, and red neighbours of all cells
+    - graph of cells with neighbour connections
+        - graphviz (.gv) file for graph
+        - can be clustered
+    optional:
+    - merged microscope image
+    - overlay of graph on microscope image
 """
 
 from datetime import datetime
@@ -77,7 +84,6 @@ if options.overlay:
 if error:
     sys.exit('Use -h for options usage help')
 
-
 # Store input information in a string
 if options.cp:
     info = '_CP'
@@ -113,7 +119,7 @@ def parse_csv(file):
         sys.exit('Error: could not parse CSV, use -C if file is for CellProfiler (MATLAB files are default)\n'
                  'Use -h for options usage help')
     df = df[indices[0]:indices[-1] + 1][data_cols]
-    df.columns = ['Cell', 'X', 'Y']
+    df.columns = ['Cell_ID', 'X', 'Y']
     return df
 
 if options.green_file and options.red_file:
@@ -128,27 +134,36 @@ else:
         data = parse_csv(options.red_file)
         split = 0
 
-# Collect data for histogram and clustering
-def cell_type(index, out='int'):
+data = data.set_index(np.arange(data.shape[0]))
+
+# Helper functions
+def cell_type(index, format='int'):
     if index < split:
-        if out == 'str':
+        if format == 'fullstr':
+            return 'Green'
+        if format == 'str':
             return 'G'
-        if out == 'int':
+        if format == 'int':
             return 1
-        if out == 'hex':
+        if format == 'hex':
             return greenf
     else:
-        if out == 'str':
+        if format == 'fullstr':
+            return 'Red'
+        if format == 'str':
             return 'R'
-        if out == 'int':
+        if format == 'int':
             return 2
-        if out == 'hex':
+        if format == 'hex':
             return redf
 
 def cell_name(index):
-    return cell_type(index, 'str') + str(int(data.iloc[index]['Cell']))
+    return cell_type(index, 'str') + str(int(data.iloc[index]['Cell_ID']))
 
-degrees = np.zeros(data.shape[0])
+# Collect data for histogram and clustering
+degrees = pd.DataFrame(0, index=np.arange(data.shape[0]), columns=['Cell_ID', 'Total', 'Green', 'Red'])
+degrees['Cell_ID'] = data['Cell_ID']
+
 cell_positions = np.empty((2, data.shape[0]))
 cell_neighbours = np.empty(data.shape[0], dtype=object)
 
@@ -168,14 +183,19 @@ while i < data.shape[0]:
         if distance < float(radius):
             cell_neighbours[i].append(ni)
 
-            degrees[i] += 1
-            degrees[ni] += 1
+            degrees[cell_type(ni, 'fullstr')][i] += 1
+            degrees[cell_type(i, 'fullstr')][ni] += 1
+
         ni += 1
+    degrees['Total'][i] = degrees['Green'][i] + degrees['Red'][i]
+
     i += 1
+
+degrees.to_csv(directory + '/cell_degrees' + info + '.csv', index=False)
 
 # Clustering
 if options.cluster:
-    min_pts = int(math.ceil(np.mean(degrees))) + 1
+    min_pts = int(math.ceil(np.mean(np.array(degrees['Total'])))) + 1
 
     db = DBSCAN(eps=radius, min_samples=min_pts).fit(np.transpose(cell_positions))
 
@@ -241,7 +261,7 @@ while i < data.shape[0]:
 g.render(directory + '/cellgraph' + info + '.gv')
 
 # Plot and generate histogram image
-degrees_split = np.split(degrees, [split])
+degrees_split = np.split(np.array(degrees['Total']), [split])
 
 plt.figure()
 plt.hist([degrees_split[0], degrees_split[1]],
@@ -273,6 +293,7 @@ if options.overlay:
                   ImageMath.eval('convert(max(a, b), "L")', a=b0, b=b1)
 
         image = Image.merge('RGB', (r, g, b))
+        image.save(directory + '/merged_image' + info + '.png')
     graph = Image.open(directory + '/cellgraph' + info + '.gv.png')
     ratio = float(image.size[0]) / image.size[1]
 
