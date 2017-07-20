@@ -115,6 +115,9 @@ def parse_csv(file):
         data_cols = ['CellID', 'CentroidX', 'CentroidY']
     try:
         indices = np.where(df[frame_col] == options.time)[0]
+        if not len(indices):
+            max = df.loc[df.shape[0] - 1][frame_col]
+            sys.exit('Error: Timeframe out of range\nMaximum timeframe: ' + str(max) + '\nTimeframe provided: ' + str(options.time))
     except KeyError:
         sys.exit('Error: could not parse CSV, use -C if file is for CellProfiler (MATLAB files are default)\n'
                  'Use -h for options usage help')
