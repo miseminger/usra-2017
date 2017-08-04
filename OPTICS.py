@@ -7,13 +7,20 @@ Last Modified Date: 3 August 2017
 OPTICS ordering implementation in python
 Method to extract clusters from reachability plot
 
-Usage: Optics(dataset).cluster()
+Usage: Optics(dataset).cluster(noise_threshold=0.05)
    - dataset is an array of Point instances:
        - initialize with Point(*coordinates)
+   - .cluster has optional argument noise threshold, the percentage of estimated noise considered significant (do not use less than 0.05)
+Outputs:
    - returns Clustering instance with attributes:
        - .ordered: OPTICS ordering of points
        - .labels: clustering labels of ordered
        - .centroids: cluster centroids
+   - creates directory containing:
+       - scatter plot of coloured clustered points
+       - reachability plot, its derivative, and the std threshold
+       - partitions of reachability plot and the converged threshold
+           - no line indicates noise level below noise threshold
 """
 
 import os
@@ -123,15 +130,17 @@ class Optics:
 
         return self.ordered
 
-    def cluster(self):
+    def cluster(self, noise_threshold=0.05):
         
         # Create directory and save figures
         directory_i = 1
-        directory = 'OPTICS_images/F_' + str(directory_i)
+        directory = 'OPTICS_' + str(directory_i)
         while os.path.exists(directory):
             directory_i += 1
-            directory = 'OPTICS_images/F_' + str(directory_i)
+            directory = 'OPTICS_' + str(directory_i)
         os.makedirs(directory)
+        
+        print '\nDirectory created: ' + directory
         
         def savefig(name):
             count = 1
@@ -256,22 +265,31 @@ class Optics:
         points_processed = 0          # Number of points processed
         f, axes = plt.subplots(1, len(partitions), sharey=True)  # Start a figure with subplots for partitions
         
-        # If noise is estimated to be less than 5%, accept partitions as complete clusters with no noise
-        if noise_estimate <= 0.05:
+        # Create a cluster from start and endpoints (in the ordered points array)
+        def create_cluster(start, end):
+            
+            # Get points, calculate centroid, and remove points from noise
+            cluster_points = ordered[start:end]
+            for p in cluster_points:
+                sums = np.zeros(p.dim)
+                for c in range(p.dim):
+                    sums[c] += p.pos[c]
+                noise.remove(p)
+            
+            # Get cluster attributes
+            cluster_id = len(clusters)
+            labels[start:end] = [cluster_id] * len(cluster_points)
+            centroids.append(Point(*[s / len(cluster_points) for s in sums]))
+            clusters.append(cluster_points)
+        
+        # If noise is estimated to be less than some percentage, accept partitions as complete clusters with no noise
+        if noise_estimate <= noise_threshold:
             for i in range(len(partitions)):
                 partition = partitions[i]
-                
-                cluster_points = ordered[points_processed:points_processed + len(partition)]
-                points_processed += len(partition)
-                for p in cluster_points:
-                    noise.remove(p)
-                clusters.append(Cluster(*cluster_points))
-                
-                cluster_id = len(clusters)
-                labels[points_processed:points_processed + len(partition)] = [cluster_id] * len(cluster_points)
-                centroid.append(Point(*[s / len(cluster_points) for s in sums]))
-                
                 axes[i].plot(partition)
+                
+                create_cluster(points_processed, points_processed + len(partition))
+                points_processed += len(partition)
         
         # Otherwise, if noise estimated to be significant, find cluster endpoints
         else:  
@@ -286,7 +304,6 @@ class Optics:
                         start = max(j - blur_radius, 0)
                 if end is None:
                     end = len(reach_data)
-                axes[i].axhline(threshold)
                 return start, end
             
             # Iterate through partitions
@@ -303,27 +320,18 @@ class Optics:
                 count = 0
                 while cluster_endpoints != old_cluster_endpoints and count < 10:
                     old_cluster_endpoints = cluster_endpoints
-                    cluster_endpoints = process(partition, 2 * partition[int(math.ceil(np.mean(cluster_endpoints)))])
+                    partition_threshold = 2 * partition[int(math.ceil(np.mean(cluster_endpoints)))]
+                    cluster_endpoints = process(partition, partition_threshold)
                     count += 1
+                
+                axes[i].axhline(partition_threshold)
                 
                 # Convert from partition indexing (starts from 0 for every partition) to all data indexing
                 cluster_endpoints = [cluster_endpoints[0] + points_processed, cluster_endpoints[1] + points_processed]
                 points_processed += len(partition)
                 
-                # Get points, create Cluster instance, and remove from noise
-                cluster_points = ordered[cluster_endpoints[0]:cluster_endpoints[1]]
-                for p in cluster_points:
-                    sums = np.zeros(p.dim)
-                    for c in range(p.dim):
-                        sums[c] += p.pos[c]
-                    noise.remove(p)
+                create_cluster(cluster_endpoints[0], cluster_endpoints[1])
                 
-                cluster_id = len(clusters)
-                labels[cluster_endpoints[0]:cluster_endpoints[1]] = [cluster_id] * len(cluster_points)
-                centroids.append(Point(*[s / len(cluster_points) for s in sums]))
-                
-                clusters.append(cluster_points)
-        
         clustering = Clustering(ordered, labels, centroids)
                 
         savefig('partitions')
@@ -339,5 +347,7 @@ class Optics:
             plt.scatter([p.pos[0] for p in clusters[i]], [p.pos[1] for p in clusters[i]], c=colormap[i])
         plt.scatter([p.pos[0] for p in noise], [p.pos[1] for p in noise], c='w')
         savefig('clusters')
+        
+        print '3 figures added to ' + directory + '\n'
         
         return clustering
