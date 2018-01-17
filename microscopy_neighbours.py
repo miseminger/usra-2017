@@ -164,6 +164,29 @@ def cell_name(index):
     return cell_type(index, 'str') + str(int(data.iloc[index]['Cell_ID']))
 
 # Collect data for histogram and clustering
+
+# Code to determine intersections of lines drawn between centroids (from https://stackoverflow.com/questions/20677795/how-do-i-compute-the-intersection-point-of-two-lines-in-python)
+from __future__ import division 
+
+def line(p1, p2):
+    A = (p1[1] - p2[1])
+    B = (p2[0] - p1[0])
+    C = (p1[0]*p2[1] - p2[0]*p1[1])
+    return A, B, -C
+
+def intersection(L1, L2):
+    D  = L1[0] * L2[1] - L1[1] * L2[0]
+    Dx = L1[2] * L2[1] - L1[1] * L2[2]
+    Dy = L1[0] * L2[2] - L1[2] * L2[0]
+    if D != 0:
+        x = Dx / D
+        y = Dy / D
+        return x,y
+    else:
+        return False
+    
+    
+    
 degrees = pd.DataFrame(0, index=np.arange(data.shape[0]), columns=['Cell_ID', 'Total', 'Green', 'Red'])
 degrees['Cell_ID'] = data['Cell_ID']
 
@@ -182,8 +205,17 @@ while i < data.shape[0]:
     while ni < data.shape[0]:
         nx, ny = data.iloc[ni]['X'] * microns_per_pixel, data.iloc[ni]['Y'] * microns_per_pixel
         distance = math.sqrt((x - nx)**2 + (y - ny)**2)
+        
+        #probably need to add another nesting thing--want to check against all other lines (check over all lines--one against all others)
+        L1 = line([0,1], [2,3])
+        L2 = line([2,3], [0,4])
+        R = intersection(L1, L2)
+        if R:
+            print "Intersection detected:", R
+        else:
+            return False
 
-        if distance < float(radius):
+        if distance < float(radius) and R == False:
             cell_neighbours[i].append(ni)
 
             degrees[cell_type(ni, 'fullstr')][i] += 1
