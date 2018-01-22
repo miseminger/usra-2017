@@ -123,7 +123,7 @@ def parse_csv(file):
                  'Use -h for options usage help')
     df = df[indices[0]:indices[-1] + 1][data_cols]
     df.columns = ['Cell_ID', 'X', 'Y']
-    return df
+    return df  #this is a DataFrame
 
 if options.green_file and options.red_file:
     green_data, red_data = parse_csv(options.green_file), parse_csv(options.red_file)
@@ -184,10 +184,11 @@ def intersection(L1, L2):
         return x,y
     else:
         return False
-    
-    
-#add a new column for trueneighbours, truegreen, truered    
-degrees = pd.DataFrame(0, index=np.arange(data.shape[0]), columns=['Cell_ID', 'Total', 'Green', 'Red'])
+
+#make an empty chart with columns named as "columns", below, with the first column unlabeled but numbered 0 to n-1 and the rest filled with 0's
+degrees = pd.DataFrame(0, index=np.arange(data.shape[0]), columns=['Cell_ID', 'TrueTotal', 'TrueGreen', 'TrueRed','Total', 'Green', 'Red'])  #  TrueTotal holds the number of true neighbours, TrueGreen the number of true neighbours that are green, and TrueRed the number of true neighbours that are red.
+
+#fill the Cell_ID column with the Cell_ID numbers
 degrees['Cell_ID'] = data['Cell_ID']
 
 cell_positions = np.empty((2, data.shape[0]))
