@@ -161,7 +161,7 @@ def cell_type(index, format='int'):
             return redf
 
 def cell_name(index):
-    return cell_type(index, 'str') + str(int(data.iloc[index]['Cell_ID']))
+    return cell_type(index, 'str') + str(int(data.iloc[index]['Cell_ID'])) #iloc fetches the Cell ID from row number (index)
 
 # Collect data for histogram and clustering
 
@@ -186,7 +186,7 @@ def intersection(L1, L2):
         return False
     
     
-    
+#add a new column for trueneighbours, truegreen, truered    
 degrees = pd.DataFrame(0, index=np.arange(data.shape[0]), columns=['Cell_ID', 'Total', 'Green', 'Red'])
 degrees['Cell_ID'] = data['Cell_ID']
 
