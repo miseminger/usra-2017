@@ -194,6 +194,7 @@ degrees['Cell_ID'] = data['Cell_ID']
 cell_positions = np.empty((2, data.shape[0]))
 cell_neighbours = np.empty(data.shape[0], dtype=object)
 
+#make an array cell_positions that has 2 rows (x position in first, y position below) and as many columns as there are cells; cells are indexed as 'i'
 i = 0
 while i < data.shape[0]:
 
@@ -201,13 +202,27 @@ while i < data.shape[0]:
                                                  data.iloc[i]['Y'] * microns_per_pixel
     x, y = cell_positions[0, i], cell_positions[1, i]
     cell_neighbours[i] = []
-
+    
+    #now go through and find all the neighbours of cell i (these are called ni)
+    #first: identify everything within the distance labelled "radius"
     ni = i + 1
     while ni < data.shape[0]:
         nx, ny = data.iloc[ni]['X'] * microns_per_pixel, data.iloc[ni]['Y'] * microns_per_pixel
         distance = math.sqrt((x - nx)**2 + (y - ny)**2)
+
+        if distance < float(radius):
+            cell_neighbours[i].append(ni)
+
+            degrees[cell_type(ni, 'fullstr')][i] += 1
+            degrees[cell_type(i, 'fullstr')][ni] += 1
+
+        ni += 1
         
-        #probably need to add another nesting thing--want to check against all other lines (check over all lines--one against all others)
+    nii = ni + 1
+    #probably need to add another nesting thing--want to check against all other lines (check over all lines--one against all others)  
+    while nii < data.shape[0]:
+        niix, niiy =  data.iloc[nii]['X'] * microns_per_pixel, data.iloc[nii]['Y'] * microns_per_pixel
+        
         L1 = line([0,1], [2,3])
         L2 = line([2,3], [0,4])
         R = intersection(L1, L2)
@@ -215,14 +230,7 @@ while i < data.shape[0]:
             print "Intersection detected:", R
         else:
             return False
-
-        if distance < float(radius) and R == False:
-            cell_neighbours[i].append(ni)
-
-            degrees[cell_type(ni, 'fullstr')][i] += 1
-            degrees[cell_type(i, 'fullstr')][ni] += 1
-
-        ni += 1
+        
     degrees['Total'][i] = degrees['Green'][i] + degrees['Red'][i]
 
     i += 1
