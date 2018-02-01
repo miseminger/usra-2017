@@ -23,6 +23,8 @@ Outputs:
     - merged microscope image
     - overlay of graph on microscope image
 """
+import matplotlib
+matplotlib.use('Agg')
 
 from datetime import datetime
 start_time = datetime.now()
