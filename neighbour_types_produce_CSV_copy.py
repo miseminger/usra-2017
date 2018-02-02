@@ -9,9 +9,11 @@ Arguments:
     -C CellProfiler: add flag if data is from CellProfiler (as opposed to MATLAB, default)
     -g, -r: path to green and red CSV files (at least one file must be provided)
     -m or -p: radius in microns or pixels
-Output:
+Outputs:
     CSV file with one row for each timeframe with frame number, number of green cells, number of red cells, green-green neighbours, red-red neighbours, green-red neighbours
+    Plot of number of green cells, number of red cells, green-green neighbours, red-red neighbours, green-red neighbours versus frame number
 """
+import os
 
 from datetime import datetime as dt
 start_time = dt.now()
@@ -20,6 +22,7 @@ time_mark = start_time
 import sys
 import math
 import numpy as np
+import matplotlib.pyplot as plt
 
 from optparse import OptionParser
 
@@ -149,14 +152,33 @@ while time < max_time:
     red_s = np.delete(red_s, np.arange(np_neighbours[time, 2]), 0)
     time += 1
 
-#csv_name = 'neighbours.csv'
+
+csv_name = 'neighbours_1' + '.csv'
 count = 1
-while os.path.isfile(csv_name):
+while os.path.isfile(csv_name): #if the csv name already exists, make new files with _1, _2, _3 at the end to differentiate
     count += 1
     csv_name = 'neighbours_' + str(count) + '.csv'
 np.savetxt(csv_name, np_neighbours, delimiter=',')
 
+#plot graph of average neighbours over time
+input_file = csv_name
+frame_num, green_cells, red_cells, green_green_neighbours, red_red_neighbours, green_red_neighbours = np.loadtxt(input_file, delimiter=',', unpack=True, skiprows=0)
+
+plt.plot(frame_num, green_cells, linestyle='-', label='green cells', color='g')
+plt.plot(frame_num, red_cells, linestyle='-', label='red cells', color='r')
+plt.plot(frame_num, green_green_neighbours, label='green-green neighbours', color='c')
+plt.plot(frame_num, red_red_neighbours, label='red-red neighbours', color='m')
+plt.plot(frame_num, green_red_neighbours, label='green-red neighbours', color='k')
+plt.xlabel('frame #')
+plt.ylabel('number')
+plt.legend(loc='upper right',prop={'size':7})
+plt.grid()
+plt.savefig('neighbours_' + str(count) + '.png')
+
 # Script completion text
 print '\n' + str(int(total_frames)) + ' frames processed'
 print 'CSV produced: ' + csv_name
+print 'Plot produced: ' + 'neighbours_' + str(count) + '.png'
 print 'Total runtime: ' + timestring(dt.now() - start_time) + '\n'
+
+
