@@ -245,11 +245,16 @@ if options.cluster:
     min_pts = int(math.ceil(np.mean(np.array(degrees['Total'])))) + 1
 
     db = DBSCAN(eps=radius, min_samples=min_pts).fit(np.transpose(cell_positions))
-
+    
+    #eps: The maximum distance between two samples for them to be considered as in the same neighborhood.
+    #min_samples: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. This includes the point itself.  (Find a starting spot for a cluster as some spot with at least min_pts centroids within eps around it)
+    #noise points have < min_pts neighbours AND are not leaf nodes of clusters
     num_colors = 12
 
+    #Cluster labels for each point in the dataset given to fit(). Noisy samples are given the label -1.  Number of labels = number of clusters.
     labels = db.labels_
-
+    
+    #Relabel cells as 0 (for noisy points) or as the remainder of the label given by dbscan divided by 12, plus 1
     label_i = 0
     while label_i < len(db.labels_):
         label = labels[label_i]
@@ -274,6 +279,7 @@ g.attr('node', pin='true', shape='circle', width='0.5', fixedsize='true', style=
        colorscheme='set312', fontname='courier', fontsize='10.0')
 g.attr('edge', fontsize='10.0', penwidth='2', fontname='courier')
 
+#the labels array is given in the same order as the cell_positions array, so you can just match up the cells in order of that
 i = 0
 while i < data.shape[0]:
     x, y = cell_positions[0, i], cell_positions[1, i]
@@ -357,6 +363,12 @@ if options.overlay:
     image.paste(graph, (0, 0), graph)
 
     image.save(directory + '/cellgraph_overlay' + info + '.png')
+    
+#new bit for getting things out of the directory    
+i = 0
+while i < data.shape[0]:
+    x_pos, y_pos = cell_positions[0, i]* scale, cell_positions[1, i]* scale * (-1)
+    i += 1    
 
 # Script complete text
 print '\nOutput folder created: ' + directory
