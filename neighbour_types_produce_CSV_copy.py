@@ -118,47 +118,28 @@ def find_neighbours(primary, secondary):
         ai = 4  #put red-red neighbours in column 4
         
     time = 0
-    while time <= green[green.shape[0],0]:  # while time <= last timeframe
+    while time <= primary[primary.shape[0],0]:  # while time <= last timeframe
             timeslist = primary[:,0].tolist()  #list format of the frame numbers (as many of each frame # as there are cells in it)
             firsttime = timeslist.index(time)  #index for first instance of frame number
             lasttime = len(timeslist) - timeslist[::-1].index(time) - 1 #index for last instance of frame number
         while i == time: #go through all the objects in the green array for a certain timeframe
-#convert to microns earlier in the code.  actually, don't bother?  ...may as well. need it for the other thing!
-            x, y = primary.iloc[i]['X'], primary.iloc[i]['Y']
+            x, y = primary.iloc[i]['Location_Center_X'], primary.iloc[i]['Location_Center_Y']
    
-            #now go through and find all the green neighbours of cell i in that same timeframe (these are called ni): look at all cells in that timeframe except i
-            #define some array that you can iterate over: this array should be limited to the first and last instances of the timeframe in secondary and skip row i if primary equals secondary.
-            
+            #now go through and find all the green neighbours of cell i in that same timeframe (these are called ni)
             if primary == secondary:
-                ni is found in the array ni_array = [secondary[], secondary[]]  verts.index(time) skipping row i
+                ni_array = secondary[firsttime:i] + secondary[(i + 1):(lasttime + 1)]   #skip row i
             else:
-                ni is found in the array ni_array = verts.index(time)  = [secondary.index(time), secondary[]]
-            for ni in ni_array:
-                nx, ny = secondary.iloc[ni]['X'], secondary.iloc[ni]['Y']
+                ni_array = secondary[firsttime:(lasttime + 1)]   #iterate over all objects
+            for ni in ni_array: 
+                nx, ny = secondary.iloc[ni]['Location_Center_X'], secondary.iloc[ni]['Location_Center_Y']
                 distance = math.sqrt((x - nx)**2 + (y - ny)**2)
                 
                 if distance < float(radius):
                     np_neighbours[i, ai] += 1  #increase the neighbour count in row i, column ai by one
             i += 1   
         time += 1
-        
-#for a given frame (time), where primary and secondary are the colours of cells, find all the neighbours for each cell
-def find_neighbours(primary, secondary, time):
-    if primary is not secondary:
-        ai = 5  #put red-green neighbours in column 5
-    elif primary is green:
-        ai = 3  #put green-green neighbours in column 3
-    else:
-        ai = 4  #put red-red neighbours in column 4
-    
-    ni = 0
-    while secondary[ni, 0] == time:     #while in the same frame number == time
-        nx, ny = secondary[ni, 1], secondary[ni, 2]   
-        distance = math.sqrt((x - nx)**2 + (y - ny)**2)
-        if distance < radius:
-            np_neighbours[time, ai] += 1  #increase the neighbour count in column ai by one
-        ni += 1 #iterate over all unique cells in the frame
 
+        
 time = start_count
 red_s = red
 total_frames = max_time - start_count + 1 #total_frames is the number of frames remaining to process
