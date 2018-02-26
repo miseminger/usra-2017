@@ -10,9 +10,9 @@ Arguments:
     -g, -r: path to green and red CSV files (at least one file must be provided)
     -m or -p: radius in microns or pixels
 Outputs:
-    CSV file with one row for each timeframe with frame number, number of green cells, number of red cells, green-green neighbours, red-red neighbours, green-red neighbours
-    Plot of number of green cells, number of red cells, green-green neighbours, red-red neighbours, green-red neighbours versus frame number
-"""
+    CSV file with one row for each cell with frame number, object number, number of green-green neighbours, red-red neighbours, green-red neighbours
+    """
+
 import os
 
 from datetime import datetime as dt
@@ -41,11 +41,11 @@ error = 0
 if options.cp:
     microns_per_pixel = 0.8
     start_count = 0
-    data_cols = ['Metadata_FrameNumber', 'Location_Center_X', 'Location_Center_Y']
-else:
-    microns_per_pixel = 0.8
-    start_count = 1
-    data_cols = ['Frame', 'CentroidX', 'CentroidY']
+    data_cols = ['Metadata_FrameNumber', 'ObjectNumber', 'Location_Center_X', 'Location_Center_Y','TrackObjects_Displacement_15','TrackObjects_DistanceTraveled_15','TrackObjects_TrajectoryX_15','TrackObjects_TrajectoryY_15','AreaShape_Area']
+#else:
+#    microns_per_pixel = 0.8
+#    start_count = 1
+#    data_cols = ['Frame', 'CentroidX', 'CentroidY']
 if not(options.greenfile and options.redfile):
     error = 1
     print 'Error: insufficient file input, both files must be provided using -g and -r'
@@ -94,6 +94,8 @@ def np_read_csv(file):
 
 try:
     green, red = np_read_csv(options.greenfile), np_read_csv(options.redfile)
+    green[:,2:6] = green[:,2:6] * microns_per_pixel #convert all distances in green from pixels to microns
+    red[:,2:6] = red[:,2:6] * microns_per_pixel #convert all distances in green from pixels to microns
 except KeyError:
     sys.exit('Error: could not parse CSV, use -C if file is for CellProfiler (MATLAB files are default)\n'
              'Use -h for options usage help')
@@ -109,6 +111,12 @@ print '{:20}'.format('Frames processed') + '{:20}'.format('Total runtime') + '{:
 
 #FIND NEIGHBOURS
 def find_neighbours(primary, secondary):
+
+	#set the matrix to put neighbour information in
+	np_neighbours = np.empty(primary.shape[0], 5)  #first two columns are for frame number and cell ID, last 3 are for neighbours
+	np_neighbours[:,0] = primary[:,0]  #first row of np_neighbours is Metadata_FrameNumber (frame #)
+	np_neighbours[:,1] = primary[:,1]  #second row of np_neighbours is ObjectNumber (cell ID)
+
     
     if primary is not secondary:
         ai = 5  #put red-green neighbours in column 5
@@ -117,12 +125,11 @@ def find_neighbours(primary, secondary):
     else:
         ai = 4  #put red-red neighbours in column 4
         
-    time = 0
     while time <= primary[primary.shape[0],0]:  # while time <= last timeframe
             timeslist = primary[:,0].tolist()  #list format of the frame numbers (as many of each frame # as there are cells in it)
             firsttime = timeslist.index(time)  #index for first instance of frame number
             lasttime = len(timeslist) - timeslist[::-1].index(time) - 1 #index for last instance of frame number
-        while i == time: #go through all the objects in the green array for a certain timeframe
+        while primary[i] == time: #go through all the objects in the green array for a certain timeframe
             x, y = primary.iloc[i]['Location_Center_X'], primary.iloc[i]['Location_Center_Y']
    
             #now go through and find all the green neighbours of cell i in that same timeframe (these are called ni)
@@ -139,61 +146,45 @@ def find_neighbours(primary, secondary):
             i += 1   
         time += 1
 
-        
-time = start_count
-red_s = red
-total_frames = max_time - start_count + 1 #total_frames is the number of frames remaining to process
-np_neighbours = np.empty((total_frames, 6))  #why total_frames, not max_time?
+time = start_count  #start at t=0 or t=1 for CellProfiler or Matlab
+total_frames = max_time - start_count + 1 #total_frames is the total number of frames :)
+
 
 #now loop through and find the neighbours for everything
-while time < max_time:
+#set the matrix to put red neighbour information in
+np_neighbours = np.empty(red.shape[0], 5)  #first two columns are for frame number and cell ID, last 3 are for neighbours
+np_neighbours[:,0] = red[:,0]  #first row of np_neighbours is Metadata_FrameNumber (frame #)
+np_neighbours[:,1] = red[:,1]  #second row of np_neighbours is ObjectNumber (cell ID)
+find_neighbours(red, red)
+find_neighbours(red, green)
+np_neighbours = np_neighbours + np.delete(red[:,0:2])  #add the rest of the datacols to np_neighbours before saving it:
+np_neighbours_red = np_neighbours
+
+#make the green and red np_neighbours called something different
+#set the matrix to put green neighbour information in
+np_neighbours = np.empty(green.shape[0], 5)  #first two columns are for frame number and cell ID, last 3 are for neighbours
+np_neighbours[:,0] = green[:,0]  #first row of np_neighbours is Metadata_FrameNumber (frame #)
+np_neighbours[:,1] = green[:,1]  #second row of np_neighbours is ObjectNumber (cell ID)
+find_neighbours(green, green)
+find_neighbours(green, red)    
+np_neighbours = np_neighbours + np.delete(green[:,0:2])  #add the rest of the datacols to np_neighbours before saving it
+np_neighbours_green = np_neighbours
+
+#combine red and green neighbours: red on top, green below
+np_neighbours_merged = np.stack((np_neighbours_red, np_neighbours_green))
+
+while time <= max_time:
     if time > 0 and time % 10 == 0:
         time_mark = mark()  #this is just for the timestamp
-    np_neighbours[time, 0] = time  #populate the leftmost column of np_neighbours with the frame numbers as you go
-
-    first = True
-    while green[0, 0] == time: #start from the top with the first frame
-        x, y = green[0, 1], green[0, 2]  #x and y are for the first cell
-        green = np.delete(green, 0, 0) #remove the top row of green, ie. the first cell, so we can look at everything else
-        
-        if first:
-            np_neighbours[time, 1], np_neighbours[time, 2] = find_neighbours(green, green, time) + 1, find_neighbours(green, red_s, time)
-            first = False
-        else:
-            find_neighbours(green, green, time)
-            find_neighbours(green, red_s, time)
-    
-    while red[0, 0] == time:
-        x, y = red[0, 1], red[0, 2]
-        red = np.delete(red, 0, 0)
-        
-        find_neighbours(red, red, time)
-    
-    red_s = np.delete(red_s, np.arange(np_neighbours[time, 2]), 0)
     time += 1
-
 
 csv_name = 'neighbours_1' + '.csv'
 count = 1
 while os.path.isfile(csv_name): #if the csv name already exists, make new files with _1, _2, _3 at the end to differentiate
     count += 1
     csv_name = 'neighbours_' + str(count) + '.csv'
-np.savetxt(csv_name, np_neighbours, delimiter=',')
+np.savetxt(csv_name, np_neighbours_merged, delimiter=',')
 
-#plot graph of average neighbours over time
-input_file = csv_name
-frame_num, green_cells, red_cells, green_green_neighbours, red_red_neighbours, green_red_neighbours = np.loadtxt(input_file, delimiter=',', unpack=True, skiprows=0)
-
-plt.plot(frame_num, green_cells, linestyle='-', label='green cells', color='g')
-plt.plot(frame_num, red_cells, linestyle='-', label='red cells', color='r')
-plt.plot(frame_num, green_green_neighbours, label='green-green neighbours', color='c')
-plt.plot(frame_num, red_red_neighbours, label='red-red neighbours', color='m')
-plt.plot(frame_num, green_red_neighbours, label='green-red neighbours', color='k')
-plt.xlabel('frame #')
-plt.ylabel('number')
-plt.legend(loc='upper right',prop={'size':7})
-plt.grid()
-plt.savefig('neighbours_' + str(count) + '.png')
 
 # Script completion text
 print '\n' + str(int(total_frames)) + ' frames processed'
