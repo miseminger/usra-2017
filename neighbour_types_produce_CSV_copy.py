@@ -112,23 +112,27 @@ print '{:20}'.format('Frames processed') + '{:20}'.format('Total runtime') + '{:
 #FIND NEIGHBOURS
 def find_neighbours(primary, secondary):
 
-	#set the matrix to put neighbour information in
-	np_neighbours = np.empty(primary.shape[0], 5)  #first two columns are for frame number and cell ID, last 3 are for neighbours
-	np_neighbours[:,0] = primary[:,0]  #first row of np_neighbours is Metadata_FrameNumber (frame #)
-	np_neighbours[:,1] = primary[:,1]  #second row of np_neighbours is ObjectNumber (cell ID)
+    #set the matrix to put neighbour information in
+    np_neighbours = np.empty(primary.shape[0], 5)  #first two columns are for frame number and cell ID, last 3 are for neighbours
+    np_neighbours[:,0] = primary[:,0]  #first row of np_neighbours is Metadata_FrameNumber (frame #)
+    np_neighbours[:,1] = primary[:,1]  #second row of np_neighbours is ObjectNumber (cell ID)
 
-    
     if primary is not secondary:
         ai = 5  #put red-green neighbours in column 5
     elif primary is green:
         ai = 3  #put green-green neighbours in column 3
     else:
         ai = 4  #put red-red neighbours in column 4
+		
+    time = start_count  #start at t=0 or t=1 for CellProfiler or Matlab
+    total_frames = max_time - start_count + 1 #total_frames is the total number of frames :)
         
     while time <= primary[primary.shape[0],0]:  # while time <= last timeframe
-            timeslist = primary[:,0].tolist()  #list format of the frame numbers (as many of each frame # as there are cells in it)
-            firsttime = timeslist.index(time)  #index for first instance of frame number
-            lasttime = len(timeslist) - timeslist[::-1].index(time) - 1 #index for last instance of frame number
+        timeslist = primary[:,0].tolist()  #list format of the frame numbers (as many of each frame # as there are cells in it)
+        firsttime = timeslist.index(time)  #index for first instance of frame number
+        lasttime = len(timeslist) - timeslist[::-1].index(time) - 1 #index for last instance of frame number
+	if time > 0 and time % 10 == 0: #this is just for the timestamp
+            time_mark = mark()  
         while primary[i] == time: #go through all the objects in the green array for a certain timeframe
             x, y = primary.iloc[i]['Location_Center_X'], primary.iloc[i]['Location_Center_Y']
    
@@ -145,10 +149,6 @@ def find_neighbours(primary, secondary):
                     np_neighbours[i, ai] += 1  #increase the neighbour count in row i, column ai by one
             i += 1   
         time += 1
-
-time = start_count  #start at t=0 or t=1 for CellProfiler or Matlab
-total_frames = max_time - start_count + 1 #total_frames is the total number of frames :)
-
 
 #now loop through and find the neighbours for everything
 #set the matrix to put red neighbour information in
@@ -172,11 +172,6 @@ np_neighbours_green = np_neighbours
 
 #combine red and green neighbours: red on top, green below
 np_neighbours_merged = np.stack((np_neighbours_red, np_neighbours_green))
-
-while time <= max_time:
-    if time > 0 and time % 10 == 0:
-        time_mark = mark()  #this is just for the timestamp
-    time += 1
 
 csv_name = 'neighbours_1' + '.csv'
 count = 1
