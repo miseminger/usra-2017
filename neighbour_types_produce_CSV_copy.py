@@ -132,7 +132,7 @@ def find_neighbours(primary, secondary):
             x, y = primary[i,2], primary[i,3]
    
             #now go through and find all the green neighbours of cell i in that same timeframe (these are called ni)
-            if primary == secondary:
+            if primary is secondary:
                 ni_array = secondary[firsttime:i] + secondary[(i + 1):(lasttime + 1)]   #skip row i
             else:
                 ni_array = secondary[firsttime:(lasttime + 1)]   #iterate over all objects
