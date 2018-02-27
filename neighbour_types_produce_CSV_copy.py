@@ -6,7 +6,6 @@ Last Modified Date: 4 Aug 2017
 
 Processes a MATLAB simulation csv file and determines cell neighbours at all frames
 Arguments:
-    -C CellProfiler: add flag if data is from CellProfiler (as opposed to MATLAB, default)
     -g, -r: path to green and red CSV files (at least one file must be provided)
     -m or -p: radius in microns or pixels
 Outputs:
@@ -38,10 +37,10 @@ parser.add_option('-C', action='store_true', dest='cp',
 
 (options, args) = parser.parse_args()
 error = 0
-if options.cp:
-    microns_per_pixel = 0.8
-    start_count = 0
-    data_cols = ['Metadata_FrameNumber', 'ObjectNumber', 'Location_Center_X', 'Location_Center_Y','TrackObjects_Displacement_15','TrackObjects_DistanceTraveled_15','TrackObjects_TrajectoryX_15','TrackObjects_TrajectoryY_15','AreaShape_Area']
+#if options.cp:
+microns_per_pixel = 0.8
+start_count = 0
+data_cols = ['Metadata_FrameNumber', 'ObjectNumber', 'Location_Center_X', 'Location_Center_Y','TrackObjects_Displacement_15','TrackObjects_DistanceTraveled_15','TrackObjects_TrajectoryX_15','TrackObjects_TrajectoryY_15','AreaShape_Area']
 #else:
 #    microns_per_pixel = 0.8
 #    start_count = 1
@@ -112,11 +111,6 @@ print '{:20}'.format('Frames processed') + '{:20}'.format('Total runtime') + '{:
 #FIND NEIGHBOURS
 def find_neighbours(primary, secondary):
 
-    #set the matrix to put neighbour information in
-    np_neighbours = np.empty(primary.shape[0], 5)  #first two columns are for frame number and cell ID, last 3 are for neighbours
-    np_neighbours[:,0] = primary[:,0]  #first row of np_neighbours is Metadata_FrameNumber (frame #)
-    np_neighbours[:,1] = primary[:,1]  #second row of np_neighbours is ObjectNumber (cell ID)
-
     if primary is not secondary:
         ai = 5  #put red-green neighbours in column 5
     elif primary is green:
@@ -152,7 +146,7 @@ def find_neighbours(primary, secondary):
 
 #now loop through and find the neighbours for everything
 #set the matrix to put red neighbour information in
-np_neighbours = np.empty(red.shape[0], 5)  #first two columns are for frame number and cell ID, last 3 are for neighbours
+np_neighbours = np.zeros((red.shape[0], 5))  #first two columns are for frame number and cell ID, last 3 are for neighbours
 np_neighbours[:,0] = red[:,0]  #first row of np_neighbours is Metadata_FrameNumber (frame #)
 np_neighbours[:,1] = red[:,1]  #second row of np_neighbours is ObjectNumber (cell ID)
 find_neighbours(red, red)
@@ -162,7 +156,7 @@ np_neighbours_red = np_neighbours
 
 #make the green and red np_neighbours called something different
 #set the matrix to put green neighbour information in
-np_neighbours = np.empty(green.shape[0], 5)  #first two columns are for frame number and cell ID, last 3 are for neighbours
+np_neighbours = np.zeros((green.shape[0], 5))  #first two columns are for frame number and cell ID, last 3 are for neighbours
 np_neighbours[:,0] = green[:,0]  #first row of np_neighbours is Metadata_FrameNumber (frame #)
 np_neighbours[:,1] = green[:,1]  #second row of np_neighbours is ObjectNumber (cell ID)
 find_neighbours(green, green)
