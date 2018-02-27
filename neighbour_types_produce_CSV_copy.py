@@ -129,7 +129,7 @@ def find_neighbours(primary, secondary):
             time_mark = mark()  
 	i = firsttime #start with the index of the first instance of the frame number
         while primary[i,0] == time: #go through all the objects in the green array for a certain timeframe
-            x, y = primary.iloc[i]['Location_Center_X'], primary.iloc[i]['Location_Center_Y']
+            x, y = primary[i,2], primary[i,3]
    
             #now go through and find all the green neighbours of cell i in that same timeframe (these are called ni)
             if primary == secondary:
