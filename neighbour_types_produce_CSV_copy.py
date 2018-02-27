@@ -121,7 +121,7 @@ def find_neighbours(primary, secondary):
     time = start_count  #start at t=0 or t=1 for CellProfiler or Matlab
     total_frames = max_time - start_count + 1 #total_frames is the total number of frames :)
         
-    while time <= primary[primary.shape[0],0]:  # while time <= last timeframe
+    while time <= primary[(primary.shape[0] - 1),0]:  # while time <= last timeframe
         timeslist = primary[:,0].tolist()  #list format of the frame numbers (as many of each frame # as there are cells in it)
         firsttime = timeslist.index(time)  #index for first instance of frame number
         lasttime = len(timeslist) - timeslist[::-1].index(time) - 1 #index for last instance of frame number
@@ -146,7 +146,7 @@ def find_neighbours(primary, secondary):
 
 #now loop through and find the neighbours for everything
 #set the matrix to put red neighbour information in
-np_neighbours = np.zeros((red.shape[0], 5))  #first two columns are for frame number and cell ID, last 3 are for neighbours
+np_neighbours = np.zeros(((red.shape[0] - 1), 5))  #first two columns are for frame number and cell ID, last 3 are for neighbours
 np_neighbours[:,0] = red[:,0]  #first row of np_neighbours is Metadata_FrameNumber (frame #)
 np_neighbours[:,1] = red[:,1]  #second row of np_neighbours is ObjectNumber (cell ID)
 find_neighbours(red, red)
@@ -156,7 +156,7 @@ np_neighbours_red = np_neighbours
 
 #make the green and red np_neighbours called something different
 #set the matrix to put green neighbour information in
-np_neighbours = np.zeros((green.shape[0], 5))  #first two columns are for frame number and cell ID, last 3 are for neighbours
+np_neighbours = np.zeros(((green.shape[0] - 1), 5))  #first two columns are for frame number and cell ID, last 3 are for neighbours
 np_neighbours[:,0] = green[:,0]  #first row of np_neighbours is Metadata_FrameNumber (frame #)
 np_neighbours[:,1] = green[:,1]  #second row of np_neighbours is ObjectNumber (cell ID)
 find_neighbours(green, green)
