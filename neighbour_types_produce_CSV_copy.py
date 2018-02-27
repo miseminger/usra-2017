@@ -93,8 +93,8 @@ def np_read_csv(file):
 
 try:
     green, red = np_read_csv(options.greenfile), np_read_csv(options.redfile)
-    green[:,2:6] = green[:,2:6] * microns_per_pixel #convert all distances in green from pixels to microns
-    red[:,2:6] = red[:,2:6] * microns_per_pixel #convert all distances in green from pixels to microns
+    #green[:,2:6] = green[:,2:6] * microns_per_pixel #convert all distances in green from pixels to microns
+    #red[:,2:6] = red[:,2:6] * microns_per_pixel #convert all distances in green from pixels to microns
 except KeyError:
     sys.exit('Error: could not parse CSV, use -C if file is for CellProfiler (MATLAB files are default)\n'
              'Use -h for options usage help')
@@ -129,15 +129,15 @@ def find_neighbours(primary, secondary):
             time_mark = mark()  
 	i = firsttime #start with the index of the first instance of the frame number
         while primary[i,0] == time: #go through all the objects in the green array for a certain timeframe
-            x, y = primary[i,2], primary[i,3]
+            x, y = primary[i,2] * microns_per_pixel, primary[i,3] * microns_per_pixel
    
             #now go through and find all the green neighbours of cell i in that same timeframe (these are called ni)
             if primary is secondary:
-                ni_array = secondary[firsttime:i] + secondary[(i + 1):(lasttime + 1)]   #skip row i
+                ni_array = np.append(secondary[firsttime:i,0], secondary[(i + 1):(lasttime + 1),0])   #skip row i
             else:
-                ni_array = secondary[firsttime:(lasttime + 1)]   #iterate over all objects
+                ni_array = (secondary[firsttime:(lasttime + 1),0]).flatten()   #iterate over all objects
             for ni in ni_array: 
-                nx, ny = secondary.iloc[ni]['Location_Center_X'], secondary.iloc[ni]['Location_Center_Y']
+                nx, ny = secondary[ni,2] * microns_per_pixel, secondary[ni,3] * microns_per_pixel
                 distance = math.sqrt((x - nx)**2 + (y - ny)**2)
                 
                 if distance < float(radius):
