@@ -191,6 +191,10 @@ np_neighbours_green = np_neighbours
 #combine red and green neighbours: red on top, green below
 np_neighbours_merged = np.concatenate((np_neighbours_red, np_neighbours_green), axis=0)
 
+#add column labels
+columnlabels = ['Metadata_FrameNumber', 'ObjectNumber', 'Green-Green Neighbours', 'Red-Red Neighbours', 'Red-Green Neighbours']
+np_neighbours_merged = np.concatenate((columnlabels, np_neighbours_merged), axis=0)
+
 csv_name = 'neighbours_1' + '.csv'
 count = 1
 while os.path.isfile(csv_name): #if the csv name already exists, make new files with _1, _2, _3 at the end to differentiate
@@ -198,10 +202,10 @@ while os.path.isfile(csv_name): #if the csv name already exists, make new files 
     csv_name = 'neighbours_' + str(count) + '.csv'
 np.savetxt(csv_name, np_neighbours_merged, delimiter=',')
 
-#add column labels to .csv
-df = read_csv(csv_name)
-df.columns = ['Metadata_FrameNumber', 'ObjectNumber', 'Green-Green Neighbours', 'Red-Red Neighbours', 'Red-Green Neighbours']
-df.to_csv(csv_name)
+#add column labels to .csv: this way messes up the order
+#df = read_csv(csv_name)
+#df.columns = ['Metadata_FrameNumber', 'ObjectNumber', 'Green-Green Neighbours', 'Red-Red Neighbours', 'Red-Green Neighbours']
+#df.to_csv(csv_name)
 
 
 # Script completion text
