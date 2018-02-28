@@ -148,10 +148,13 @@ def find_neighbours(primary, secondary):
             x, y = primary[i,2] * microns_per_pixel, primary[i,3] * microns_per_pixel
    
             #now go through and find all the green neighbours of cell i in that same timeframe (these are called ni)
+	    #as is, ni_array is a list of the actual times with as many of each time as there are cells in that timeframe...what I want are the indices!
             if primary is secondary:
-                ni_array = np.append(secondary[firsttime:i,0], secondary[(i + 1):(lasttime + 1),0])   #skip row i
+                #ni_array = np.append(secondary[firsttime:i,0], secondary[(i + 1):(lasttime + 1),0])   #skip row i
+		ni_array = np.append(np.arange(firsttime,i), np.arange(i,(lasttime + 1)))
             else:
-                ni_array = (secondary[firsttime:(lasttime + 1),0]).flatten()   #iterate over all objects
+                #ni_array = (secondary[firsttime:(lasttime + 1),0]).flatten()   #iterate over all objects
+		ni_array = np.arange(firsttime,(lasttime + 1))
             for ni in ni_array: 
                 nx, ny = secondary[ni,2] * microns_per_pixel, secondary[ni,3] * microns_per_pixel
                 distance = math.sqrt((x - nx)**2 + (y - ny)**2)
