@@ -129,7 +129,7 @@ def find_neighbours(primary, secondary):
             #time_mark = mark()  
 	i = firsttime #start with the index of the first instance of the frame number
         #while primary[i,0] == time: #go through all the objects in the green array for a certain timeframe
-	for i in [firsttime:(lasttime + 1)]:
+	for i in np.arange(firsttime,(lasttime + 1)):
             x, y = primary[i,2] * microns_per_pixel, primary[i,3] * microns_per_pixel
    
             #now go through and find all the green neighbours of cell i in that same timeframe (these are called ni)
