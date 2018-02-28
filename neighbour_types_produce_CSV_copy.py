@@ -124,11 +124,11 @@ print total_frames
 def find_neighbours(primary, secondary):
 
     if primary is not secondary:
-        ai = 5  #put red-green (heterotypic) neighbours in column 5
+        ai = 4  #put red-green (heterotypic) neighbours in column 5
     elif primary is green:
-        ai = 3  #put green-green neighbours in column 3
+        ai = 2  #put green-green neighbours in column 3
     else:
-        ai = 4  #put red-red neighbours in column 4
+        ai = 3  #put red-red neighbours in column 4
 		
     time = start_count  #start at t=0 or t=1 for CellProfiler or Matlab
         
