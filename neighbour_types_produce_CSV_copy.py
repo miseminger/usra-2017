@@ -193,7 +193,8 @@ np_neighbours_merged = np.concatenate((np_neighbours_red, np_neighbours_green), 
 
 #add column labels
 columnlabels = ['Metadata_FrameNumber', 'ObjectNumber', 'Green-Green Neighbours', 'Red-Red Neighbours', 'Red-Green Neighbours']
-np_neighbours_merged = np.concatenate((columnlabels, np_neighbours_merged), axis=0)
+np_neighbours_merged = pd.DataFrame(np_neighbours_merged, columns=columnlabels)
+df.to_csv('df.csv', index=True, header=True, sep=' ')
 
 csv_name = 'neighbours_1' + '.csv'
 count = 1
@@ -207,6 +208,7 @@ np.savetxt(csv_name, np_neighbours_merged, delimiter=',')
 #df.columns = ['Metadata_FrameNumber', 'ObjectNumber', 'Green-Green Neighbours', 'Red-Red Neighbours', 'Red-Green Neighbours']
 #df.to_csv(csv_name)
 
+#df.to_csv('df.csv', index=True, header=True, sep=' ')
 
 # Script completion text
 print '\n' + str(int(total_frames)) + ' frames processed'
