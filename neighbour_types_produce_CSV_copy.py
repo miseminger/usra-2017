@@ -22,6 +22,7 @@ import sys
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from pandas import read_csv
 
 from optparse import OptionParser
 
@@ -196,6 +197,11 @@ while os.path.isfile(csv_name): #if the csv name already exists, make new files 
     count += 1
     csv_name = 'neighbours_' + str(count) + '.csv'
 np.savetxt(csv_name, np_neighbours_merged, delimiter=',')
+
+#add column labels to .csv
+df = read_csv(csv_name)
+df.columns = ['Metadata_FrameNumber', 'ObjectNumber', 'Green-Green Neighbours', 'Red-Red Neighbours', 'Red-Green Neighbours']
+df.to_csv(csv_name)
 
 
 # Script completion text
