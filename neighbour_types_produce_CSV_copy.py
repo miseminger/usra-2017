@@ -88,7 +88,7 @@ def mark():
 
 ## EXTRACT DATA
 def np_read_csv(file):
-    da = np.genfromtxt(file, delimiter=',', names=True, usecols=data_cols, max_rows=20)  #make an array out of the .csv, called da
+    da = np.genfromtxt(file, delimiter=',', names=True, usecols=data_cols, max_rows=5)  #make an array out of the .csv, called da
     return da.view((float, len(da.dtype.names))) #transform everything in the array to a float
 
 try:
@@ -100,6 +100,13 @@ except KeyError:
              'Use -h for options usage help')
 max_time = int(green[-1, 0])  #max_time is the last frame number (last row, first column of green)
 
+print 'red:'
+print red
+print 'green:'
+print green
+print 'max_time:'
+print max_time
+
     
 # Process frames
 time_mark = dt.now()
@@ -108,6 +115,9 @@ print 'Processing frames...'
 print '{:20}'.format('Frames processed') + '{:20}'.format('Total runtime') + '{:20}'.format('Block runtime')
 
 total_frames = max_time - start_count + 1 #total_frames is the total number of frames :)
+
+print 'total_frames:'
+print total_frames
 
 #FIND NEIGHBOURS
 def find_neighbours(primary, secondary):
@@ -122,6 +132,8 @@ def find_neighbours(primary, secondary):
     time = start_count  #start at t=0 or t=1 for CellProfiler or Matlab
         
     while time <= primary[(primary.shape[0] - 1),0]:  # while time <= last timeframe
+	print 'time'
+	print time
         timeslist = primary[:,0].tolist()  #list format of the frame numbers (as many of each frame # as there are cells in it)
         firsttime = timeslist.index(time)  #index for first instance of frame number
         lasttime = len(timeslist) - timeslist[::-1].index(time) - 1 #index for last instance of frame number
@@ -130,6 +142,8 @@ def find_neighbours(primary, secondary):
 	i = firsttime #start with the index of the first instance of the frame number
         #while primary[i,0] == time: #go through all the objects in the green array for a certain timeframe
 	for i in np.arange(firsttime,(lasttime + 1)):
+	    print 'i:'
+	    print i
             x, y = primary[i,2] * microns_per_pixel, primary[i,3] * microns_per_pixel
    
             #now go through and find all the green neighbours of cell i in that same timeframe (these are called ni)
@@ -143,6 +157,8 @@ def find_neighbours(primary, secondary):
                 
                 if distance < float(radius):
                     np_neighbours[i, ai] += 1  #increase the neighbour count in row i, column ai by one
+	    print 'np_neighbours[i, ai]:'
+	    print np_neighbours[i, ai]
             #i += 1   
         time += 1
 
@@ -152,7 +168,12 @@ np_neighbours = np.zeros(((red.shape[0]), 5))  #first two columns are for frame 
 np_neighbours[:,0] = red[:,0]  #first row of np_neighbours is Metadata_FrameNumber (frame #)
 np_neighbours[:,1] = red[:,1]  #second row of np_neighbours is ObjectNumber (cell ID)
 find_neighbours(red, red)
+print 'find_neighbours(red, red)...'
+print np_neighbours
+
 find_neighbours(red, green)
+print 'find_neighbours(red, green)...'
+print np_neighbours
 np_neighbours = np.concatenate((np_neighbours, np.delete(red,[0,1],1)), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
 np_neighbours_red = np_neighbours
 
