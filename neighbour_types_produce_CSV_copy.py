@@ -40,7 +40,7 @@ error = 0
 #if options.cp:
 microns_per_pixel = 0.8
 start_count = 0
-data_cols = ['Metadata_FrameNumber', 'ObjectNumber', 'Location_Center_X', 'Location_Center_Y','TrackObjects_Displacement_15','TrackObjects_DistanceTraveled_15','TrackObjects_TrajectoryX_15','TrackObjects_TrajectoryY_15','AreaShape_Area']
+data_cols = ['Metadata_FrameNumber', 'ObjectNumber', 'Location_Center_X', 'Location_Center_Y']
 #else:
 #    microns_per_pixel = 0.8
 #    start_count = 1
@@ -174,7 +174,7 @@ print np_neighbours
 find_neighbours(red, green)
 print 'find_neighbours(red, green)...'
 print np_neighbours
-np_neighbours = np.concatenate((np_neighbours, np.delete(red,[0,1],1)), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
+#np_neighbours = np.concatenate((np_neighbours, np.delete(red,[0,1],1)), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
 np_neighbours_red = np_neighbours
 
 #make the green and red np_neighbours called something different
@@ -184,7 +184,7 @@ np_neighbours[:,0] = green[:,0]  #first row of np_neighbours is Metadata_FrameNu
 np_neighbours[:,1] = green[:,1]  #second row of np_neighbours is ObjectNumber (cell ID)
 find_neighbours(green, green)
 find_neighbours(green, red)    
-np_neighbours = np.concatenate((np_neighbours, np.delete(green,[0,1],1)), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
+#np_neighbours = np.concatenate((np_neighbours, np.delete(green,[0,1],1)), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
 np_neighbours_green = np_neighbours
 
 #combine red and green neighbours: red on top, green below
