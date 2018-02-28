@@ -107,19 +107,19 @@ print 'Setup complete: ' + timestring(time_mark - start_time) + '\n'
 print 'Processing frames...'
 print '{:20}'.format('Frames processed') + '{:20}'.format('Total runtime') + '{:20}'.format('Block runtime')
 
+total_frames = max_time - start_count + 1 #total_frames is the total number of frames :)
 
 #FIND NEIGHBOURS
 def find_neighbours(primary, secondary):
 
     if primary is not secondary:
-        ai = 5  #put red-green neighbours in column 5
+        ai = 5  #put red-green (heterotypic) neighbours in column 5
     elif primary is green:
         ai = 3  #put green-green neighbours in column 3
     else:
         ai = 4  #put red-red neighbours in column 4
 		
     time = start_count  #start at t=0 or t=1 for CellProfiler or Matlab
-    total_frames = max_time - start_count + 1 #total_frames is the total number of frames :)
         
     while time <= primary[(primary.shape[0] - 1),0]:  # while time <= last timeframe
         timeslist = primary[:,0].tolist()  #list format of the frame numbers (as many of each frame # as there are cells in it)
@@ -167,7 +167,7 @@ np_neighbours = np.concatenate((np_neighbours, np.delete(green,[0,1],1)), axis=1
 np_neighbours_green = np_neighbours
 
 #combine red and green neighbours: red on top, green below
-np_neighbours_merged = np.stack((np_neighbours_red, np_neighbours_green))
+np_neighbours_merged = np.concatenate((np_neighbours_red, np_neighbours_green), axis=0)
 
 csv_name = 'neighbours_1' + '.csv'
 count = 1
