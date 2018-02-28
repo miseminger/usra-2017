@@ -128,7 +128,8 @@ def find_neighbours(primary, secondary):
 	#if time > 0 and time % 10 == 0: #this is just for the timestamp
             #time_mark = mark()  
 	i = firsttime #start with the index of the first instance of the frame number
-        while primary[i,0] == time: #go through all the objects in the green array for a certain timeframe
+        #while primary[i,0] == time: #go through all the objects in the green array for a certain timeframe
+	for i in [firsttime:(lasttime + 1)]:
             x, y = primary[i,2] * microns_per_pixel, primary[i,3] * microns_per_pixel
    
             #now go through and find all the green neighbours of cell i in that same timeframe (these are called ni)
@@ -142,7 +143,7 @@ def find_neighbours(primary, secondary):
                 
                 if distance < float(radius):
                     np_neighbours[i, ai] += 1  #increase the neighbour count in row i, column ai by one
-            i += 1   
+            #i += 1   
         time += 1
 
 #now loop through and find the neighbours for everything
