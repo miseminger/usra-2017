@@ -88,7 +88,7 @@ def mark():
 
 ## EXTRACT DATA
 def np_read_csv(file):
-    da = np.genfromtxt(file, delimiter=',', names=True, usecols=data_cols)  #make an array out of the .csv, called da
+    da = np.genfromtxt(file, delimiter=',', names=True, usecols=data_cols, max_rows=20)  #make an array out of the .csv, called da
     return da.view((float, len(da.dtype.names))) #transform everything in the array to a float
 
 try:
