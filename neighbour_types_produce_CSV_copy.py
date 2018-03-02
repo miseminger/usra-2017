@@ -205,7 +205,7 @@ while os.path.isfile(csv_name): #if the csv name already exists, make new files 
     count += 1
     csv_name = 'neighbours_' + str(count) + '.csv'
 
-np_neighbours_merged.to_csv(csv_name, index=True, header=True, sep=' ')
+np_neighbours_merged.to_csv(csv_name, index=False, header=True, sep=' ')
 
 #np.savetxt(csv_name, np_neighbours_merged, delimiter=',')
 
