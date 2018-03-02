@@ -132,7 +132,7 @@ def find_neighbours(primary, secondary):
 		
     time = start_count  #start at t=0 or t=1 for CellProfiler or Matlab
         
-    while time <= primary[(primary.shape[0] - 1),0]:  # while time <= last timeframe
+    while time < primary[(primary.shape[0]),0]:  # while time <= last timeframe
 	print 'time'
 	print time
         timeslist = primary[:,0].tolist()  #list format of the frame numbers (as many of each frame # as there are cells in it)
