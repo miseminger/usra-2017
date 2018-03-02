@@ -102,12 +102,31 @@ except KeyError:
              'Use -h for options usage help')
 max_time = int(green[-1, 0])  #max_time is the last frame number (last row, first column of green)
 
-print 'red:'
-print red
-print 'green:'
-print green
-print 'max_time:'
-print max_time
+# Helper functions
+def cell_type(index, format='int'):
+    if index < green.shape[0]:
+        if format == 'fullstr':
+            return 'Green'
+        if format == 'str':
+            return 'G'
+        if format == 'int':
+            return 1
+        if format == 'hex':
+            return greenf
+    else:
+        if format == 'fullstr':
+            return 'Red'
+        if format == 'str':
+            return 'R'
+        if format == 'int':
+            return 2
+        if format == 'hex':
+            return redf
+
+redf = '#FF9090'
+greenf = '#75CF90'
+redl = '#FF3535'
+greenl = '#019A2F'
 
     
 # Process frames
@@ -117,9 +136,6 @@ print 'Processing frames...'
 print '{:20}'.format('Frames processed') + '{:20}'.format('Total runtime') + '{:20}'.format('Block runtime')
 
 total_frames = max_time - start_count + 1 #total_frames is the total number of frames :)
-
-print 'total_frames:'
-print total_frames
 
 #FIND NEIGHBOURS
 def find_neighbours(primary, secondary):
@@ -185,11 +201,21 @@ find_neighbours(green, red)
 np_neighbours = np.concatenate((np_neighbours, np.delete(green,[0,1],1)), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
 np_neighbours_green = np_neighbours
 
+#refine cell IDs to include color tags
+#def cell_name(index, color):
+#    return cell_type(index, 'str') + str(int(color[index,1]))
+
+#i = 0
+#while i < red.shape[0]:
+#	np_neighbours_red[i,1] = 'RED_' + str(i+1)
+#	np_neighbours_green[i,1] = 'GREEN_' + str(i+1)
+#	i = i + 1
+
 #combine red and green neighbours: red on top, green below
 np_neighbours_merged = np.concatenate((np_neighbours_red, np_neighbours_green), axis=0)
 
 #add column labels
-columnlabels = ['Metadata_FrameNumber', 'ObjectNumber', 'Green-Green Neighbours', 'Red-Red Neighbours', 'Red-Green Neighbours','Location_Center_X', 'Location_Center_Y']
+columnlabels = ['Metadata_FrameNumber', 'ObjectNumber', 'Green-Green Neighbours', 'Red-Red Neighbours', 'Red-Green Neighbours','Location_Center_X (px)', 'Location_Center_Y (px)']
 np_neighbours_merged = pd.DataFrame(np_neighbours_merged, columns=columnlabels)
 
 csv_name = 'neighbours_1' + '.csv'
@@ -210,7 +236,6 @@ np_neighbours_merged.to_csv(csv_name, index=False, header=True, sep=' ')
 # Script completion text
 print '\n' + str(int(total_frames)) + ' frames processed'
 print 'CSV produced: ' + csv_name
-print 'Plot produced: ' + 'neighbours_' + str(count) + '.png'
 print 'Total runtime: ' + timestring(dt.now() - start_time) + '\n'
 
 
