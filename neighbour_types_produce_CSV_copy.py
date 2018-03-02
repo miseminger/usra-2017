@@ -22,6 +22,7 @@ import sys
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 from pandas import read_csv
 
 from optparse import OptionParser
@@ -132,7 +133,7 @@ def find_neighbours(primary, secondary):
 		
     time = start_count  #start at t=0 or t=1 for CellProfiler or Matlab
         
-    while time < primary[(primary.shape[0]),0]:  # while time <= last timeframe
+    while time < primary[(primary.shape[0] - 1),0] + 1:  # while time <= last timeframe
 	print 'time'
 	print time
         timeslist = primary[:,0].tolist()  #list format of the frame numbers (as many of each frame # as there are cells in it)
@@ -197,21 +198,21 @@ np_neighbours_merged = np.concatenate((np_neighbours_red, np_neighbours_green), 
 #add column labels
 columnlabels = ['Metadata_FrameNumber', 'ObjectNumber', 'Green-Green Neighbours', 'Red-Red Neighbours', 'Red-Green Neighbours']
 np_neighbours_merged = pd.DataFrame(np_neighbours_merged, columns=columnlabels)
-df.to_csv('df.csv', index=True, header=True, sep=' ')
 
 csv_name = 'neighbours_1' + '.csv'
 count = 1
 while os.path.isfile(csv_name): #if the csv name already exists, make new files with _1, _2, _3 at the end to differentiate
     count += 1
     csv_name = 'neighbours_' + str(count) + '.csv'
-np.savetxt(csv_name, np_neighbours_merged, delimiter=',')
+
+np_neighbours_merged.to_csv(csv_name, index=True, header=True, sep=' ')
+
+#np.savetxt(csv_name, np_neighbours_merged, delimiter=',')
 
 #add column labels to .csv: this way messes up the order
 #df = read_csv(csv_name)
 #df.columns = ['Metadata_FrameNumber', 'ObjectNumber', 'Green-Green Neighbours', 'Red-Red Neighbours', 'Red-Green Neighbours']
 #df.to_csv(csv_name)
-
-#df.to_csv('df.csv', index=True, header=True, sep=' ')
 
 # Script completion text
 print '\n' + str(int(total_frames)) + ' frames processed'
