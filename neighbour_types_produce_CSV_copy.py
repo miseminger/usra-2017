@@ -90,7 +90,7 @@ def mark():
 
 ## EXTRACT DATA
 def np_read_csv(file):
-    da = np.genfromtxt(file, delimiter=',', names=True, usecols=data_cols, max_rows=5)  #make an array out of the .csv, called da
+    da = np.genfromtxt(file, delimiter=',', names=True, usecols=data_cols)  #make an array out of the .csv, called da. max_rows=5 is good for testing!
     return da.view((float, len(da.dtype.names))) #transform everything in the array to a float
 
 try:
@@ -150,8 +150,6 @@ def find_neighbours(primary, secondary):
     time = start_count  #start at t=0 or t=1 for CellProfiler or Matlab
         
     while time < primary[(primary.shape[0] - 1),0] + 1:  # while time <= last timeframe
-	print 'time'
-	print time
         timeslist = primary[:,0].tolist()  #list format of the frame numbers (as many of each frame # as there are cells in it)
         firsttime = timeslist.index(time)  #index for first instance of frame number
         lasttime = len(timeslist) - timeslist[::-1].index(time) - 1 #index for last instance of frame number
@@ -159,8 +157,6 @@ def find_neighbours(primary, secondary):
             #time_mark = mark()  
 	i = firsttime #start with the index of the first instance of the frame number
 	for i in np.arange(firsttime,(lasttime + 1)):
-	    print 'i:'
-	    print i
             x, y = primary[i,2] * microns_per_pixel, primary[i,3] * microns_per_pixel
    
             #now go through and find all the green neighbours of cell i in that same timeframe (these are called ni)
@@ -182,12 +178,8 @@ np_neighbours = np.zeros(((red.shape[0]), 5))  #first two columns are for frame 
 np_neighbours[:,0] = red[:,0]  #first row of np_neighbours is Metadata_FrameNumber (frame #)
 np_neighbours[:,1] = red[:,1]  #second row of np_neighbours is ObjectNumber (cell ID)
 find_neighbours(red, red)
-print 'find_neighbours(red, red)...'
-print np_neighbours
 
 find_neighbours(red, green)
-print 'find_neighbours(red, green)...'
-print np_neighbours
 np_neighbours = np.concatenate((np_neighbours, np.delete(red,[0,1],1)), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
 np_neighbours_red = np_neighbours
 
@@ -225,11 +217,11 @@ red_csv_name = 'neighbours_1' + '_red.csv'
 count = 1
 while os.path.isfile(red_csv_name): #if the csv name already exists, make new files with _1, _2, _3 at the end to differentiate
     count += 1
-    red_csv_name = 'neighbours_' + str(count) + '.csv'
+    red_csv_name = 'neighbours_' + str(count) + '_red.csv'
 count = 1
 while os.path.isfile(green_csv_name): #if the csv name already exists, make new files with _1, _2, _3 at the end to differentiate
     count += 1
-    green_csv_name = 'neighbours_' + str(count) + '.csv'
+    green_csv_name = 'neighbours_' + str(count) + '_green.csv'
 
 np_neighbours_red.to_csv(red_csv_name, index=False, header=True, sep=' ')
 np_neighbours_green.to_csv(green_csv_name, index=False, header=True, sep=' ')
@@ -243,7 +235,7 @@ np_neighbours_green.to_csv(green_csv_name, index=False, header=True, sep=' ')
 
 # Script completion text
 print '\n' + str(int(total_frames)) + ' frames processed'
-print 'CSV produced: ' + csv_name
+print 'CSVs produced: ' + green_csv_name + ' and ' + red_csv_name
 print 'Total runtime: ' + timestring(dt.now() - start_time) + '\n'
 
 
