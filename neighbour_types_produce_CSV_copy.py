@@ -142,19 +142,15 @@ def find_neighbours(primary, secondary):
 	#if time > 0 and time % 10 == 0: #this is just for the timestamp
             #time_mark = mark()  
 	i = firsttime #start with the index of the first instance of the frame number
-        #while primary[i,0] == time: #go through all the objects in the green array for a certain timeframe
 	for i in np.arange(firsttime,(lasttime + 1)):
 	    print 'i:'
 	    print i
             x, y = primary[i,2] * microns_per_pixel, primary[i,3] * microns_per_pixel
    
             #now go through and find all the green neighbours of cell i in that same timeframe (these are called ni)
-	    #as is, ni_array is a list of the actual times with as many of each time as there are cells in that timeframe...what I want are the indices!
-            if primary is secondary:
-                #ni_array = np.append(secondary[firsttime:i,0], secondary[(i + 1):(lasttime + 1),0])   #skip row i
+	    if primary is secondary:
 		ni_array = np.append(np.arange(firsttime,i), np.arange(i,(lasttime + 1)))
             else:
-                #ni_array = (secondary[firsttime:(lasttime + 1),0]).flatten()   #iterate over all objects
 		ni_array = np.arange(firsttime,(lasttime + 1))
             for ni in ni_array: 
                 nx, ny = secondary[ni,2] * microns_per_pixel, secondary[ni,3] * microns_per_pixel
@@ -162,9 +158,6 @@ def find_neighbours(primary, secondary):
                 
                 if distance < float(radius):
                     np_neighbours[i, ai] += 1  #increase the neighbour count in row i, column ai by one
-	    print 'np_neighbours[i, ai]:'
-	    print np_neighbours[i, ai]
-            #i += 1   
         time += 1
 
 #now loop through and find the neighbours for everything
@@ -179,7 +172,7 @@ print np_neighbours
 find_neighbours(red, green)
 print 'find_neighbours(red, green)...'
 print np_neighbours
-#np_neighbours = np.concatenate((np_neighbours, np.delete(red,[0,1],1)), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
+np_neighbours = np.concatenate((np_neighbours, np.delete(red,[0,1],1)), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
 np_neighbours_red = np_neighbours
 
 #make the green and red np_neighbours called something different
@@ -189,14 +182,14 @@ np_neighbours[:,0] = green[:,0]  #first row of np_neighbours is Metadata_FrameNu
 np_neighbours[:,1] = green[:,1]  #second row of np_neighbours is ObjectNumber (cell ID)
 find_neighbours(green, green)
 find_neighbours(green, red)    
-#np_neighbours = np.concatenate((np_neighbours, np.delete(green,[0,1],1)), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
+np_neighbours = np.concatenate((np_neighbours, np.delete(green,[0,1],1)), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
 np_neighbours_green = np_neighbours
 
 #combine red and green neighbours: red on top, green below
 np_neighbours_merged = np.concatenate((np_neighbours_red, np_neighbours_green), axis=0)
 
 #add column labels
-columnlabels = ['Metadata_FrameNumber', 'ObjectNumber', 'Green-Green Neighbours', 'Red-Red Neighbours', 'Red-Green Neighbours']
+columnlabels = ['Metadata_FrameNumber', 'ObjectNumber', 'Green-Green Neighbours', 'Red-Red Neighbours', 'Red-Green Neighbours','Location_Center_X', 'Location_Center_Y']
 np_neighbours_merged = pd.DataFrame(np_neighbours_merged, columns=columnlabels)
 
 csv_name = 'neighbours_1' + '.csv'
