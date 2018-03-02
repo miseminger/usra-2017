@@ -216,15 +216,23 @@ np_neighbours_merged = np.concatenate((np_neighbours_red, np_neighbours_green), 
 
 #add column labels
 columnlabels = ['Metadata_FrameNumber', 'ObjectNumber', 'Green-Green Neighbours', 'Red-Red Neighbours', 'Red-Green Neighbours','Location_Center_X (px)', 'Location_Center_Y (px)']
-np_neighbours_merged = pd.DataFrame(np_neighbours_merged, columns=columnlabels)
+#np_neighbours_merged = pd.DataFrame(np_neighbours_merged, columns=columnlabels)
+np_neighbours_green = pd.DataFrame(np_neighbours_green, columns=columnlabels)
+np_neighbours_red = pd.DataFrame(np_neighbours_red, columns=columnlabels)
 
-csv_name = 'neighbours_1' + '.csv'
+green_csv_name = 'neighbours_1' + '_green.csv'
+red_csv_name = 'neighbours_1' + '_red.csv'
 count = 1
-while os.path.isfile(csv_name): #if the csv name already exists, make new files with _1, _2, _3 at the end to differentiate
+while os.path.isfile(red_csv_name): #if the csv name already exists, make new files with _1, _2, _3 at the end to differentiate
     count += 1
-    csv_name = 'neighbours_' + str(count) + '.csv'
+    red_csv_name = 'neighbours_' + str(count) + '.csv'
+count = 1
+while os.path.isfile(green_csv_name): #if the csv name already exists, make new files with _1, _2, _3 at the end to differentiate
+    count += 1
+    green_csv_name = 'neighbours_' + str(count) + '.csv'
 
-np_neighbours_merged.to_csv(csv_name, index=False, header=True, sep=' ')
+np_neighbours_red.to_csv(red_csv_name, index=False, header=True, sep=' ')
+np_neighbours_green.to_csv(green_csv_name, index=False, header=True, sep=' ')
 
 #np.savetxt(csv_name, np_neighbours_merged, delimiter=',')
 
