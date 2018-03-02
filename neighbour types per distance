@@ -5,6 +5,11 @@ Types of cell neighbours present at front vs. back of cluster over time: show wi
 import numpy as np
 import matplotlib as np
 
+
+#divide cells into bins based on their position per time frame
+
+n = 8 #number of bins: make this an option
+
 green_csv_name = 'neighbours_12.csv'
 green_input_file = csv_name
 green_frame_num, green_cell_id, green_gg_neighbours, green_rr_neighbours, green_gr_neighbours, green_x, green_y = np.loadtxt(input_file, delimiter=',', unpack=True, skiprows=0)
@@ -13,7 +18,12 @@ red_csv_name = 'neighbours_12.csv'
 red_input_file = csv_name
 red_frame_num, red_cell_id, red_gg_neighbours, red_rr_neighbours, red_gr_neighbours, red_x, red_y = np.loadtxt(input_file, delimiter=',', unpack=True, skiprows=0)
 
-collect into bins of 1600/8 = 200px
+#collect into bins of 1600/8 = 200px
+dist = 1600/n  #number of horizontal pixels in each image segment
+
+#for each of red and green, for each frame, sort indices into bins based on red_x and green_x (use histogram-style form inside a loop like for the other code)
+#count the number of red-red neighbours in each bin per time (sum column and divide by 2), green-green and red-green
+#plot numbers of each neighbour type in a given bin over time; make 8 plots
 
 
 plt.plot(frame_num, green_cells, linestyle='-', label='green cells', color='g')
