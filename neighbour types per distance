@@ -10,11 +10,11 @@ import matplotlib as np
 
 n = 8 #number of bins: make this an option
 
-green_csv_name = 'neighbours_12.csv'
+green_csv_name = 'neighbours_12_green.csv'
 green_input_file = csv_name
 green_frame_num, green_cell_id, green_gg_neighbours, green_rr_neighbours, green_gr_neighbours, green_x, green_y = np.loadtxt(input_file, delimiter=',', unpack=True, skiprows=0)
 
-red_csv_name = 'neighbours_12.csv'
+red_csv_name = 'neighbours_12_red.csv'
 red_input_file = csv_name
 red_frame_num, red_cell_id, red_gg_neighbours, red_rr_neighbours, red_gr_neighbours, red_x, red_y = np.loadtxt(input_file, delimiter=',', unpack=True, skiprows=0)
 
@@ -25,6 +25,21 @@ dist = 1600/n  #number of horizontal pixels in each image segment
 #count the number of red-red neighbours in each bin per time (sum column and divide by 2), green-green and red-green
 #plot numbers of each neighbour type in a given bin over time; make 8 plots
 
+binedges = np.arange(0,1600,dist) #this will give the left edges of the bins to index
+binlabels_green = np.digitize(green_x,binedges)  #outputs an array of bin indices in order of green_x; the first bin is index 1
+binlabels_red = np.digitize(red_x,binedges)
+
+#now for a specific bin
+#go through and find all the cells in each timeframe, ie. all the indices of green or red that fall into each bin
+
+greenlist = green_x.tolist()
+redlist = red_x.tolist()
+
+bin_num = 1
+while bin_num < binedges.shape[0] + 1:
+  green_indices = [i for i, x in enumerate(greenlist) if x == bin_num]  #returns an array of all instances of bin_num
+  red_indices = [i for i, x in enumerate(redlist) if x == bin_num]
+  bin_num = bin_num + 1
 
 plt.plot(frame_num, green_cells, linestyle='-', label='green cells', color='g')
 plt.plot(frame_num, red_cells, linestyle='-', label='red cells', color='r')
