@@ -162,8 +162,11 @@ def find_neighbours(primary, secondary):
             #now go through and find all the green neighbours of cell i in that same timeframe (these are called ni)
 	    if primary is secondary:
 		ni_array = np.append(np.arange(firsttime,i), np.arange(i,(lasttime + 1)))
-            else:
-		ni_array = np.arange(firsttime,(lasttime + 1))
+            else:  #be careful: red and green are likely different sizes in each frame!
+		secondary_timeslist = secondary[:,0].tolist()
+		ni_firsttime = secondary_timeslist.index(time)  #index for first instance of frame number
+        	ni_lasttime = len(secondary_timeslist) - secondary_timeslist[::-1].index(time) - 1 #index for last instance of frame number
+		ni_array = np.arange(ni_firsttime,(ni_lasttime + 1))
             for ni in ni_array: 
                 nx, ny = secondary[ni,2] * microns_per_pixel, secondary[ni,3] * microns_per_pixel
                 distance = math.sqrt((x - nx)**2 + (y - ny)**2)
