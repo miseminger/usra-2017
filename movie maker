@@ -21,18 +21,11 @@ while time < redfile[(redfile.shape[0] - 1),0] + 1:  # while time <= last timefr
   #find the total number of cells that are neighbours in frame 'time':
   total_cell_neighbours_green = greenfile[greenfirsttime:(greenlasttime + 1),2] + greenfile[greenfirsttime:(greenlasttime + 1),2:3] + greenfile[greenfirsttime:(greenlasttime + 1),2:4]
   total_cell_neighbours_red = redfile[redfirsttime:(redlasttime + 1),2] + redfile[redfirsttime:(redlasttime + 1),3] + redfile[redfirsttime:(redlasttime + 1),4]
+  total_cell_neighbours_all = np.concatenate((total_cell_neighbours_green, total_cell_neighbours_red), axis=0)
   
-  totalneighbours = total_cell_neighbours_green + total_cell_neighbours_red
-  
-	i = firsttime #start with the index of the first instance of the frame number
-	for i in greentimearray:
-            
-        time += 1
-
-
-                                               
+                         
 # Clustering
-    min_pts = int(math.ceil(np.mean(np.array(degrees['Total'])))) + 1
+    min_pts = int(math.ceil(np.mean(total_cell_neighbours_all))) + 1
 
     db = DBSCAN(eps=radius, min_samples=min_pts).fit(np.transpose(cell_positions))
 
@@ -96,3 +89,5 @@ while i < data.shape[0]:
     i += 1
 
 g.render(directory + '/cellgraph' + info + '.gv')                                             
+
+time += 1
