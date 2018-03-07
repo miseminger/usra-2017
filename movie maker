@@ -1,5 +1,61 @@
-redfile = 
-greenfile = 
+import os
+
+from datetime import datetime as dt
+start_time = dt.now()
+time_mark = start_time
+
+import sys
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+from pandas import read_csv
+
+from optparse import OptionParser
+
+redfile = 'neighbours_5_green.csv'
+greenfile = 'neighbours_5_green.csv'
+
+# Build directory to contain outputs
+directory = 'neighbours'
+directory_i = 0
+while os.path.exists(directory):
+    directory_i += 1
+    directory = 'neighbours' + '_' + str(directory_i)
+os.makedirs(directory)
+
+def np_read_csv(file):
+    da = np.genfromtxt(file, delimiter=',', names=True, maxrows=100)  #make an array out of the .csv, called da. max_rows=5 is good for testing!
+    return da.view((float, len(da.dtype.names))) #transform everything in the array to a float
+
+greenfile, redfile = np_read_csv(greenfile), np_read_csv(redfile)
+
+data = pd.concat([greenfile, redfile])
+data = data.set_index(np.arange(data.shape[0]))
+
+# Helper functions
+def cell_type(index, format='int'):
+    if index < split:
+        if format == 'fullstr':
+            return 'Green'
+        if format == 'str':
+            return 'G'
+        if format == 'int':
+            return 1
+        if format == 'hex':
+            return greenf
+    else:
+        if format == 'fullstr':
+            return 'Red'
+        if format == 'str':
+            return 'R'
+        if format == 'int':
+            return 2
+        if format == 'hex':
+            return redf
+            
+def cell_name(index):
+    return cell_type(index, 'str') + str(int(data[index,1]))
 
 time = input_file_green[0,0]  #start at t=0 or t=1 for CellProfiler or Matlab
 redtimeslist = redfile[:,0].tolist()  #list format of the frame numbers (as many of each frame # as there are cells in it)
@@ -17,6 +73,10 @@ while time < redfile[(redfile.shape[0] - 1),0] + 1:  # while time <= last timefr
 
   cell_positions_green = greenfile[greenfirsttime:(greenlasttime + 1),5:] * microns_per_pixel
   cell_positions_red = redfile[redfirsttime:(redlasttime + 1),5:] * microns_per_pixel
+  
+  cell_positions_total = np.concatenate((cell_positions_green, cell_positions_red), axis=0)
+  
+  split = cell_positions_green.shape[0]
 
   #find the total number of cells that are neighbours in frame 'time':
   total_cell_neighbours_green = greenfile[greenfirsttime:(greenlasttime + 1),2] + greenfile[greenfirsttime:(greenlasttime + 1),2:3] + greenfile[greenfirsttime:(greenlasttime + 1),2:4]
@@ -24,17 +84,16 @@ while time < redfile[(redfile.shape[0] - 1),0] + 1:  # while time <= last timefr
   total_cell_neighbours_all = np.concatenate((total_cell_neighbours_green, total_cell_neighbours_red), axis=0)
   
                          
-# Clustering
-    min_pts = int(math.ceil(np.mean(total_cell_neighbours_all))) + 1
+  # Clustering
+  min_pts = int(math.ceil(np.mean(total_cell_neighbours_all))) + 1
+  db = DBSCAN(eps=radius, min_samples=min_pts).fit(np.transpose(cell_positions_total))
 
-    db = DBSCAN(eps=radius, min_samples=min_pts).fit(np.transpose(cell_positions))
+  num_colors = 12
 
-    num_colors = 12
+  labels = db.labels_
 
-    labels = db.labels_
-
-    label_i = 0
-    while label_i < len(db.labels_):
+  label_i = 0
+  while label_i < len(db.labels_):
         label = labels[label_i]
         if label == -1:
             label = 0
@@ -59,7 +118,7 @@ g.attr('edge', fontsize='10.0', penwidth='2', fontname='courier')
 
 i = 0
 while i < data.shape[0]:
-    x, y = cell_positions[0, i], cell_positions[1, i]
+    x, y = cell_positions_total[0, i], cell_positions_total[1, i]
     position = str(x * scale) + ',' + str(y * scale * -1)
 
     if options.cluster:
@@ -88,6 +147,34 @@ while i < data.shape[0]:
         g.edge(cell_name(i), cell_name(ni), color=lcolor, label=label)
     i += 1
 
-g.render(directory + '/cellgraph' + info + '.gv')                                             
+g.render(directory + '/cellgraph' + info + str(time) + '.gv')           
+
+#overlay
+overlay = '/home/labmember/RoskelleyLab/EXP06-MeONGFP+EpENmCherry-40-60/Matlab/Full\ Analysis//Watershed-Outline/2015OC08.lif_EpEN_Me0N_2_Sorted_60-40_t' + str(time) + '_ch00.png'
+
+        image = Image.open(overlay)
+        r, g, b = ImageMath.eval('convert(max(a, b), "L")', a=r0, b=r1), \
+                  ImageMath.eval('convert(max(a, b), "L")', a=g0, b=g1), \
+                  ImageMath.eval('convert(max(a, b), "L")', a=b0, b=b1)
+
+        image = Image.merge('RGB', (r, g, b))
+        image.save(directory + '/merged_image' + info + '.png')
+    graph = Image.open(directory + '/cellgraph' + info + '.gv.png')
+    ratio = float(image.size[0]) / image.size[1]
+
+    image = image.resize((int(round(graph.size[1] * ratio)), graph.size[1]))
+
+    bands = list(graph.split())
+    if len(bands) == 3:
+        mask = Image.new('L', graph.size, color=128)
+        graph.putalpha(mask)
+        bands = list(graph.split())
+    else:
+        bands[3] = bands[3].point(lambda x: x * 0.65)
+    graph = Image.merge(graph.mode, bands)
+    image.paste(graph, (0, 0), graph)
+
+    image.save(directory + '/cellgraph_overlay' + info + str(time) '.png')
+
 
 time += 1
