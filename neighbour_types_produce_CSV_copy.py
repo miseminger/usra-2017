@@ -101,33 +101,6 @@ except KeyError:
     sys.exit('Error: could not parse CSV, use -C if file is for CellProfiler (MATLAB files are default)\n'
              'Use -h for options usage help')
 max_time = int(green[-1, 0])  #max_time is the last frame number (last row, first column of green)
-
-# Helper functions
-def cell_type(index, format='int'):
-    if index < green.shape[0]:
-        if format == 'fullstr':
-            return 'Green'
-        if format == 'str':
-            return 'G'
-        if format == 'int':
-            return 1
-        if format == 'hex':
-            return greenf
-    else:
-        if format == 'fullstr':
-            return 'Red'
-        if format == 'str':
-            return 'R'
-        if format == 'int':
-            return 2
-        if format == 'hex':
-            return redf
-
-redf = '#FF9090'
-greenf = '#75CF90'
-redl = '#FF3535'
-greenl = '#019A2F'
-
     
 # Process frames
 time_mark = dt.now()
@@ -148,6 +121,7 @@ def find_neighbours(primary, secondary):
         ai = 3  #put red-red neighbours in column 4
 		
     time = start_count  #start at t=0 or t=1 for CellProfiler or Matlab
+    neighbour_ids = np.zeros(primary.shape[0], dtype=object)
         
     while time < primary[(primary.shape[0] - 1),0] + 1:  # while time <= last timeframe
         timeslist = primary[:,0].tolist()  #list format of the frame numbers (as many of each frame # as there are cells in it)
@@ -173,6 +147,7 @@ def find_neighbours(primary, secondary):
                 
                 if distance < float(radius):
                     np_neighbours[i, ai] += 1  #increase the neighbour count in row i, column ai by one
+		    neighbour_ids[i].append(ni)  #add the cell ID of the neighbour to the column neighbour_ids
         time += 1
 
 #now loop through and find the neighbours for everything
@@ -183,7 +158,7 @@ np_neighbours[:,1] = red[:,1]  #second row of np_neighbours is ObjectNumber (cel
 find_neighbours(red, red)
 
 find_neighbours(red, green)
-np_neighbours = np.concatenate((np_neighbours, np.delete(red,[0,1],1)), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
+np_neighbours = np.concatenate((np_neighbours, np.delete(red,[0,1],1), neighbour_ids), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
 np_neighbours_red = np_neighbours
 
 #make the green and red np_neighbours called something different
@@ -193,7 +168,7 @@ np_neighbours[:,0] = green[:,0]  #first row of np_neighbours is Metadata_FrameNu
 np_neighbours[:,1] = green[:,1]  #second row of np_neighbours is ObjectNumber (cell ID)
 find_neighbours(green, green)
 find_neighbours(green, red)    
-np_neighbours = np.concatenate((np_neighbours, np.delete(green,[0,1],1)), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
+np_neighbours = np.concatenate((np_neighbours, np.delete(green,[0,1],1), neighbour_ids), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
 np_neighbours_green = np_neighbours
 
 #refine cell IDs to include color tags
