@@ -13,8 +13,13 @@ from pandas import read_csv
 
 from optparse import OptionParser
 
-redfile = 'neighbours_5_green.csv'
-greenfile = 'neighbours_5_green.csv'
+## OPTIONS PARSING
+usage = '%prog options\n  > both files (-g, -r) are required\n  > exactly one radius parameter (-m/-p) must be specified\n'
+parser = OptionParser(usage=usage)
+parser.add_option('-g', type='string', dest='greenfile', help='path to green CSV file')
+parser.add_option('-r', type='string', dest='redfile', help='path to red CSV file')
+parser.add_option('-m', type='string', dest='radius_m', help='radius in microns')
+parser.add_option('-p', type='string', dest='radius_p', help='radius in pixels')
 
 # Build directory to contain outputs
 directory = 'neighbours'
@@ -28,7 +33,11 @@ def np_read_csv(file):
     da = np.genfromtxt(file, delimiter=',', names=True, maxrows=100)  #make an array out of the .csv, called da. max_rows=5 is good for testing!
     return da.view((float, len(da.dtype.names))) #transform everything in the array to a float
 
-greenfile, redfile = np_read_csv(greenfile), np_read_csv(redfile)
+try:
+    greenfile, redfile = np_read_csv(options.greenfile), np_read_csv(options.redfile)
+except KeyError:
+    sys.exit('Error: could not parse CSV, use -C if file is for CellProfiler (MATLAB files are default)\n'
+             'Use -h for options usage help')
 
 data = pd.concat([greenfile, redfile])
 data = data.set_index(np.arange(data.shape[0]))
@@ -57,43 +66,43 @@ def cell_type(index, format='int'):
 def cell_name(index):
     return cell_type(index, 'str') + str(int(data[index,1]))
 
-time = input_file_green[0,0]  #start at t=0 or t=1 for CellProfiler or Matlab
+time = greenfile[0,0]  #start at t=0 or t=1 for CellProfiler or Matlab
 redtimeslist = redfile[:,0].tolist()  #list format of the frame numbers (as many of each frame # as there are cells in it)
 greentimeslist = greenfile[:,0].tolist()  #list format of the frame numbers (as many of each frame # as there are cells in it)
         
 while time < redfile[(redfile.shape[0] - 1),0] + 1:  # while time <= last timeframe (assumes red and green are same lengths in terms of time)
 
-  redfirsttime = redtimeslist.index(time)  #index for first instance of frame number
-  redlasttime = len(redtimeslist) - redtimeslist[::-1].index(time) - 1 #index for last instance of frame number
-  redtimearray = np.arange(redfirsttime,(redlasttime + 1))  #list of indices for all red cells in frame 'time'
+    redfirsttime = redtimeslist.index(time)  #index for first instance of frame number
+    redlasttime = len(redtimeslist) - redtimeslist[::-1].index(time) - 1 #index for last instance of frame number
+    redtimearray = np.arange(redfirsttime,(redlasttime + 1))  #list of indices for all red cells in frame 'time'
     
-  greenfirsttime = greentimeslist.index(time)  #index for first instance of frame number
-  greenlasttime = len(greentimeslist) - greentimeslist[::-1].index(time) - 1 #index for last instance of frame number
-  greentimearray = np.arange(greenfirsttime,(greenlasttime + 1))  #list of indices for all green cells in frame 'time'
+    greenfirsttime = greentimeslist.index(time)  #index for first instance of frame number
+    greenlasttime = len(greentimeslist) - greentimeslist[::-1].index(time) - 1 #index for last instance of frame number
+    greentimearray = np.arange(greenfirsttime,(greenlasttime + 1))  #list of indices for all green cells in frame 'time'
 
-  cell_positions_green = greenfile[greenfirsttime:(greenlasttime + 1),5:] * microns_per_pixel
-  cell_positions_red = redfile[redfirsttime:(redlasttime + 1),5:] * microns_per_pixel
+    cell_positions_green = greenfile[greenfirsttime:(greenlasttime + 1),5:7] * microns_per_pixel
+    cell_positions_red = redfile[redfirsttime:(redlasttime + 1),5:7] * microns_per_pixel
   
-  cell_positions_total = np.concatenate((cell_positions_green, cell_positions_red), axis=0)
+    cell_positions_total = np.concatenate((cell_positions_green, cell_positions_red), axis=0)
   
-  split = cell_positions_green.shape[0]
+    split = cell_positions_green.shape[0]
 
-  #find the total number of cells that are neighbours in frame 'time':
-  total_cell_neighbours_green = greenfile[greenfirsttime:(greenlasttime + 1),2] + greenfile[greenfirsttime:(greenlasttime + 1),2:3] + greenfile[greenfirsttime:(greenlasttime + 1),2:4]
-  total_cell_neighbours_red = redfile[redfirsttime:(redlasttime + 1),2] + redfile[redfirsttime:(redlasttime + 1),3] + redfile[redfirsttime:(redlasttime + 1),4]
-  total_cell_neighbours_all = np.concatenate((total_cell_neighbours_green, total_cell_neighbours_red), axis=0)
+    #find the total number of cells that are neighbours in frame 'time':
+    total_cell_neighbours_green = greenfile[greenfirsttime:(greenlasttime + 1),2] + greenfile[greenfirsttime:(greenlasttime + 1),2:3] + greenfile[greenfirsttime:(greenlasttime + 1),2:4]
+    total_cell_neighbours_red = redfile[redfirsttime:(redlasttime + 1),2] + redfile[redfirsttime:(redlasttime + 1),3] + redfile[redfirsttime:(redlasttime + 1),4]
+    total_cell_neighbours_all = np.concatenate((total_cell_neighbours_green, total_cell_neighbours_red), axis=0)
   
                          
-  # Clustering
-  min_pts = int(math.ceil(np.mean(total_cell_neighbours_all))) + 1
-  db = DBSCAN(eps=radius, min_samples=min_pts).fit(np.transpose(cell_positions_total))
+    # Clustering
+    min_pts = int(math.ceil(np.mean(total_cell_neighbours_all))) + 1
+    db = DBSCAN(eps=radius, min_samples=min_pts).fit(np.transpose(cell_positions_total))
 
-  num_colors = 12
+    num_colors = 12
 
-  labels = db.labels_
+    labels = db.labels_
 
-  label_i = 0
-  while label_i < len(db.labels_):
+    label_i = 0
+    while label_i < len(db.labels_):
         label = labels[label_i]
         if label == -1:
             label = 0
@@ -102,64 +111,57 @@ while time < redfile[(redfile.shape[0] - 1),0] + 1:  # while time <= last timefr
         labels[label_i] = label
         label_i += 1
 
-# Generate graph image
-scale = 0.025
+    # Generate graph image
+    scale = 0.025
 
-redf = '#FF9090'
-greenf = '#75CF90'
-redl = '#FF3535'
-greenl = '#019A2F'
+    redf = '#FF9090'
+    greenf = '#75CF90'
+    redl = '#FF3535'
+    greenl = '#019A2F'
 
-g = Graph(name='cellgraph' + info, format='png', engine='neato')
+    g = Graph(name='cellgraph' + str(time), format='png', engine='neato')
 
-g.attr('node', pin='true', shape='circle', width='0.5', fixedsize='true', style='filled', penwidth='3',
+    g.attr('node', pin='true', shape='circle', width='0.5', fixedsize='true', style='filled', penwidth='3',
        colorscheme='set312', fontname='courier', fontsize='10.0')
-g.attr('edge', fontsize='10.0', penwidth='2', fontname='courier')
+    g.attr('edge', fontsize='10.0', penwidth='2', fontname='courier')
 
-i = 0
-while i < data.shape[0]:
-    x, y = cell_positions_total[0, i], cell_positions_total[1, i]
-    position = str(x * scale) + ',' + str(y * scale * -1)
+    i = 0
+    while i < data.shape[0]:
+        x, y = cell_positions_total[0, i], cell_positions_total[1, i]
+        position = str(x * scale) + ',' + str(y * scale * -1)
 
-    if options.cluster:
         note = '\nC' + str(db.labels_[i])
         if labels[i] == 0:
             fill = 'white'
         else:
             fill = str(labels[i])
-    else:
-        note = ''
-        fill = cell_type(i, 'hex')
 
-    g.node(cell_name(i), label=cell_name(i) + note, pos=position, color=cell_type(i, 'hex'),
+        g.node(cell_name(i), label=cell_name(i) + note, pos=position, color=cell_type(i, 'hex'),
            fillcolor=fill)
 
-    for ni in cell_neighbours[i]:
-        if cell_type(i) == cell_type(ni):
+        for ni in neighbour_ids[i,1]:	#homotypic cell neighbours
             lcolor = cell_type(i, 'hex')
-        else:
+        for ni in neighbour_ids[i,0]:  #heterotypic cell neighbours
             lcolor = 'black'
 
-        label = ''
-        if printdist:
-            label = str(round(distance, 2))
+            label = ''
+            
+            g.edge(cell_name(i), cell_name(ni), color=lcolor, label=label)
+        i += 1
 
-        g.edge(cell_name(i), cell_name(ni), color=lcolor, label=label)
-    i += 1
+    g.render(directory + '/cellgraph' + info + str(time) + '.gv')           
 
-g.render(directory + '/cellgraph' + info + str(time) + '.gv')           
+    #overlay
+    overlay = '/home/labmember/RoskelleyLab/EXP06-MeONGFP+EpENmCherry-40-60/Matlab/Full\ Analysis//Watershed-Outline/2015OC08.lif_EpEN_Me0N_2_Sorted_60-40_t' + str(time) + '_ch00.png'
 
-#overlay
-overlay = '/home/labmember/RoskelleyLab/EXP06-MeONGFP+EpENmCherry-40-60/Matlab/Full\ Analysis//Watershed-Outline/2015OC08.lif_EpEN_Me0N_2_Sorted_60-40_t' + str(time) + '_ch00.png'
+    image = Image.open(overlay)
+    r, g, b = ImageMath.eval('convert(max(a, b), "L")', a=r0, b=r1), \
+              ImageMath.eval('convert(max(a, b), "L")', a=g0, b=g1), \
+              ImageMath.eval('convert(max(a, b), "L")', a=b0, b=b1)
 
-        image = Image.open(overlay)
-        r, g, b = ImageMath.eval('convert(max(a, b), "L")', a=r0, b=r1), \
-                  ImageMath.eval('convert(max(a, b), "L")', a=g0, b=g1), \
-                  ImageMath.eval('convert(max(a, b), "L")', a=b0, b=b1)
-
-        image = Image.merge('RGB', (r, g, b))
-        image.save(directory + '/merged_image' + info + '.png')
-    graph = Image.open(directory + '/cellgraph' + info + '.gv.png')
+    image = Image.merge('RGB', (r, g, b))
+    image.save(directory + '/merged_image' + str(time) + '.png')
+    graph = Image.open(directory + '/cellgraph' + str(time) + '.gv.png')
     ratio = float(image.size[0]) / image.size[1]
 
     image = image.resize((int(round(graph.size[1] * ratio)), graph.size[1]))
@@ -174,7 +176,7 @@ overlay = '/home/labmember/RoskelleyLab/EXP06-MeONGFP+EpENmCherry-40-60/Matlab/F
     graph = Image.merge(graph.mode, bands)
     image.paste(graph, (0, 0), graph)
 
-    image.save(directory + '/cellgraph_overlay' + info + str(time) '.png')
+    image.save(directory + '/cellgraph_overlay_t' + str(time) '.png')
 
 
 time += 1
