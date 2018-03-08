@@ -115,13 +115,16 @@ def find_neighbours(primary, secondary):
 
     if primary is not secondary:
         ai = 4  #put red-green (heterotypic) neighbours in column 5
+	idcol = 0  #IDs for heterotypic cell neighbours will go in the first column of neighbour_ids
     elif primary is green:
         ai = 2  #put green-green neighbours in column 3
+	idcol = 1  #IDs for homotypic cell neighbours will go in the first column of neighbour_ids
     else:
         ai = 3  #put red-red neighbours in column 4
+	idcol = 1  #IDs for homotypic cell neighbours will go in the first column of neighbour_ids
 		
     time = start_count  #start at t=0 or t=1 for CellProfiler or Matlab
-    neighbour_ids = np.zeros(primary.shape[0], dtype=object)
+    neighbour_ids = np.zeros((primary.shape[0], 2), dtype=object) #first column will have heterotypic neighbours, second will have homotypic neighbour IDs
         
     while time < primary[(primary.shape[0] - 1),0] + 1:  # while time <= last timeframe
         timeslist = primary[:,0].tolist()  #list format of the frame numbers (as many of each frame # as there are cells in it)
@@ -147,7 +150,7 @@ def find_neighbours(primary, secondary):
                 
                 if distance < float(radius):
                     np_neighbours[i, ai] += 1  #increase the neighbour count in row i, column ai by one
-		    neighbour_ids[i].append(ni)  #add the cell ID of the neighbour to the column neighbour_ids
+		    neighbour_ids[i, idcol].append(ni)  #add the cell ID of the neighbour to the correct column of neighbour_ids
         time += 1
 
 #now loop through and find the neighbours for everything
@@ -185,7 +188,7 @@ np_neighbours_green = np_neighbours
 np_neighbours_merged = np.concatenate((np_neighbours_red, np_neighbours_green), axis=0)
 
 #add column labels
-columnlabels = ['Metadata_FrameNumber', 'ObjectNumber', 'Green-Green Neighbours', 'Red-Red Neighbours', 'Red-Green Neighbours','Location_Center_X (px)', 'Location_Center_Y (px)']
+columnlabels = ['Metadata_FrameNumber', 'ObjectNumber', 'Green-Green Neighbours', 'Red-Red Neighbours', 'Red-Green Neighbours','Location_Center_X (px)', 'Location_Center_Y (px)','Heterotypic Neighbour IDs','Homotypic Neighbour IDs']
 #np_neighbours_merged = pd.DataFrame(np_neighbours_merged, columns=columnlabels)
 np_neighbours_green = pd.DataFrame(np_neighbours_green, columns=columnlabels)
 np_neighbours_red = pd.DataFrame(np_neighbours_red, columns=columnlabels)
