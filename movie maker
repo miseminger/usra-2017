@@ -177,10 +177,15 @@ while time < redfile[(redfile.shape[0] - 1),0] + 1:  # while time <= last timefr
     graph = Image.merge(graph.mode, bands)
     image.paste(graph, (0, 0), graph)
 
-    image.save(directory + '/cellgraph_overlay_t' + str(time) '.png')
+    timename = '%03d' % time  #add leading zeros to time for filenames
+    image.save(directory + '/cellgraph_overlay_t' + str(timename) '.png')
 
 
 time += 1
 
-
+#make a movie out of the saved images
 if options.movie:
+    #from https://stackoverflow.com/questions/44947505/how-to-make-a-movie-out-of-images-in-python
+    #-r controls frame rate: here, 1 frame per second
+    os.system("ffmpeg -r 1 -i ./directory/cellgraph_overlay_t%03d.png -vcodec mpeg4 -y directory.mp4")
+
