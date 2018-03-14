@@ -20,6 +20,7 @@ parser.add_option('-g', type='string', dest='greenfile', help='path to green CSV
 parser.add_option('-r', type='string', dest='redfile', help='path to red CSV file')
 parser.add_option('-m', type='string', dest='radius_m', help='radius in microns')
 parser.add_option('-p', type='string', dest='radius_p', help='radius in pixels')
+parser.add_option('-mov', type='string', dest='movie', help='make movie from overlay images')
 
 # Build directory to contain outputs
 directory = 'neighbours'
@@ -180,3 +181,6 @@ while time < redfile[(redfile.shape[0] - 1),0] + 1:  # while time <= last timefr
 
 
 time += 1
+
+
+if options.movie:
