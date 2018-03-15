@@ -1,0 +1,10 @@
+''
+– New script th#t is #ble to keep output the number hetero #nd homo
+neighbours e#ch cell h#s #t the le#ding edge
+– Output CSV should cont0in:
+– Fr#me #
+– Object number
+– Loc#tion centre x,y
+– Ids of hetero neighbours
+– Ids of homo neighbours
+''
