@@ -1,0 +1,20 @@
+from scipy import ndimage
+from scipy import misc
+from glob import glob
+import numpy as np
+import matplotlib.pyplot as plt
+
+#make a sorted list of all the file names in the folder
+filelist = glob('random*.png')
+filelist.sort()
+
+filename = 'filename.png'
+filename = '/home/madeline/Desktop/Physics449/2015OC08.lif_EpEN_Me0N_2_Sorted_60-40_t222_ch00_Composite_copy.png'
+
+#turn the image file into a numpy array called image_array
+image_array = misc.imread(filename)
+
+#display the image inside a matplotlib figure
+plt.imshow(image_array, cmap=plt.cm.gray)
+
+
