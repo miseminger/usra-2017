@@ -23,7 +23,7 @@ parser.add_option('-p', type='string', dest='radius_p', help='radius in pixels')
 parser.add_option('-mov', type='string', dest='movie', help='make movie from overlay images')
 
 # Build directory to contain outputs
-directory = 'neighbours'
+directory = 'neighbour_overlays'
 directory_i = 0
 while os.path.exists(directory):
     directory_i += 1
