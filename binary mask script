@@ -20,16 +20,14 @@ neighbours each cell has at the leading edge
 #!/usr/bin/python2
 
 """
-Author: Cindy Tan
-Last Modified Date: 4 Aug 2017
+Author: Cindy Tan and Madeline Iseminger
 
 Processes a MATLAB simulation csv file and determines cell neighbours at all frames
 Arguments:
     -g, -r: path to green and red CSV files (at least one file must be provided)
     -m or -p: radius in microns or pixels
-Outputs:
-    CSV file with one row for each cell with frame number, object number, number of green-green neighbours, red-red neighbours, green-red neighbours
-    """
+    -o: path to folder containing images of the type 2015OC08.lif_EpEN_Me0N_2_Sorted_60-40_t222_ch00_Composite.png
+"""
 
 import os
 
