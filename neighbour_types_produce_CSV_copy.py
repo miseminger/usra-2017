@@ -153,6 +153,14 @@ def find_neighbours(primary, secondary):
 		    neighbour_ids[i, idcol].append(ni)  #add the cell ID of the neighbour to the correct column of neighbour_ids
         time += 1
 
+#appending the neighbour ids won't work!  will need to pad with zeros, make a subarray, or something...
+result = np.zeros(b.shape)
+# actually you can also use result = np.zeros_like(b) 
+# but that also copies the dtype not only the shape
+and then insert the array where you need it:
+
+result[:a.shape[0],:a.shape[1]] = a
+
 #now loop through and find the neighbours for everything
 #set the matrix to put red neighbour information in
 np_neighbours = np.zeros(((red.shape[0]), 5))  #first two columns are for frame number and cell ID, last 3 are for neighbours
