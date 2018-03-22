@@ -150,16 +150,16 @@ def find_neighbours(primary, secondary):
                 
                 if distance < float(radius):
                     np_neighbours[i, ai] += 1  #increase the neighbour count in row i, column ai by one
-		    neighbour_ids[i, idcol].append(ni)  #add the cell ID of the neighbour to the correct column of neighbour_ids
+		    #neighbour_ids[i, idcol].append(ni)  #add the cell ID of the neighbour to the correct column of neighbour_ids
         time += 1
 
 #appending the neighbour ids won't work!  will need to pad with zeros, make a subarray, or something...
-result = np.zeros(b.shape)
+#result = np.zeros(b.shape)
 # actually you can also use result = np.zeros_like(b) 
 # but that also copies the dtype not only the shape
-and then insert the array where you need it:
+#and then insert the array where you need it:
 
-result[:a.shape[0],:a.shape[1]] = a
+#result[:a.shape[0],:a.shape[1]] = a
 
 #now loop through and find the neighbours for everything
 #set the matrix to put red neighbour information in
@@ -169,7 +169,8 @@ np_neighbours[:,1] = red[:,1]  #second row of np_neighbours is ObjectNumber (cel
 find_neighbours(red, red)
 
 find_neighbours(red, green)
-np_neighbours = np.concatenate((np_neighbours, np.delete(red,[0,1],1), neighbour_ids), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
+#np_neighbours = np.concatenate((np_neighbours, np.delete(red,[0,1],1), neighbour_ids), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
+np_neighbours = np.concatenate((np_neighbours, np.delete(red,[0,1],1)), axis=1)
 np_neighbours_red = np_neighbours
 
 #make the green and red np_neighbours called something different
@@ -179,7 +180,8 @@ np_neighbours[:,0] = green[:,0]  #first row of np_neighbours is Metadata_FrameNu
 np_neighbours[:,1] = green[:,1]  #second row of np_neighbours is ObjectNumber (cell ID)
 find_neighbours(green, green)
 find_neighbours(green, red)    
-np_neighbours = np.concatenate((np_neighbours, np.delete(green,[0,1],1), neighbour_ids), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
+#np_neighbours = np.concatenate((np_neighbours, np.delete(green,[0,1],1), neighbour_ids), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
+np_neighbours = np.concatenate((np_neighbours, np.delete(green,[0,1],1)), axis=1)   #add the rest of the datacols to np_neighbours before saving it:
 np_neighbours_green = np_neighbours
 
 #refine cell IDs to include color tags
@@ -196,7 +198,8 @@ np_neighbours_green = np_neighbours
 np_neighbours_merged = np.concatenate((np_neighbours_red, np_neighbours_green), axis=0)
 
 #add column labels
-columnlabels = ['Metadata_FrameNumber', 'ObjectNumber', 'Green-Green Neighbours', 'Red-Red Neighbours', 'Red-Green Neighbours','Location_Center_X (px)', 'Location_Center_Y (px)','Heterotypic Neighbour IDs','Homotypic Neighbour IDs']
+#columnlabels = ['Metadata_FrameNumber', 'ObjectNumber', 'Green-Green Neighbours', 'Red-Red Neighbours', 'Red-Green Neighbours','Location_Center_X (px)', 'Location_Center_Y (px)','Heterotypic Neighbour IDs','Homotypic Neighbour IDs']
+columnlabels = ['Metadata_FrameNumber', 'ObjectNumber', 'Green-Green Neighbours', 'Red-Red Neighbours', 'Red-Green Neighbours','Location_Center_X (px)', 'Location_Center_Y (px)']
 #np_neighbours_merged = pd.DataFrame(np_neighbours_merged, columns=columnlabels)
 np_neighbours_green = pd.DataFrame(np_neighbours_green, columns=columnlabels)
 np_neighbours_red = pd.DataFrame(np_neighbours_red, columns=columnlabels)
