@@ -1,22 +1,43 @@
 #files are 1600px wide by 1200px tall
-Types of cell neighbours present at front vs. back of cluster over time: show with a plot of average \# of red-red, green-green and red-green over all clusters (with stdev) vs. time
-\item {\bf February 23}: Velocity vs. time in front vs. back of cluster (leading vs. trailing edge), averaged over all clusters (*Heteromotility package?)
+#Types of cell neighbours present at front vs. back of cluster over time: show with a plot of average \# of red-red, green-green and red-green over all clusters (with stdev) vs. time
+#\item {\bf February 23}: Velocity vs. time in front vs. back of cluster (leading vs. trailing edge), averaged over all clusters (*Heteromotility package?)
 
 import numpy as np
 import matplotlib as np
+from optparse import OptionParser
+
+
+## OPTIONS PARSING
+usage = '%prog options\n  > both files (-g, -r) are required\n  > exactly one radius parameter (-m/-p) must be specified\n'
+parser = OptionParser(usage=usage)
+parser.add_option('-g', type='string', dest='greenfile', help='path to green CSV file')
+parser.add_option('-r', type='string', dest='redfile', help='path to red CSV file')
+parser.add_option('-n', type='string', dest='n', help='number of bins')
+
+(options, args) = parser.parse_args()
+error = 0
+if not(options.greenfile or options.redfile):
+    error = 1
+    print 'Error: no file input, use -g and/or -r'
+if not(options.n):
+    error = 1
+    print 'Error: number of bins not specified, use -n'
+
+# Build directory to contain outputs
+directory = 'neighbour_bins'
+directory_i = 1
+while os.path.exists(directory):
+    directory_i += 1
+    directory = 'neighbour_bins' + '_' + str(directory_i)
+os.makedirs(directory)
 
 
 #divide cells into bins based on their position per time frame
 
 n = 8 #number of bins: make this an option
 
-green_csv_name = 'neighbours_12_green.csv'
-green_input_file = csv_name
-green_frame_num, green_cell_id, green_gg_neighbours, green_rr_neighbours, green_gr_neighbours, green_x, green_y = np.loadtxt(input_file, delimiter=',', unpack=True, skiprows=0)
-
-red_csv_name = 'neighbours_12_red.csv'
-red_input_file = csv_name
-red_frame_num, red_cell_id, red_gg_neighbours, red_rr_neighbours, red_gr_neighbours, red_x, red_y = np.loadtxt(input_file, delimiter=',', unpack=True, skiprows=0)
+green_frame_num, green_cell_id, green_gg_neighbours, green_rr_neighbours, green_gr_neighbours, green_x, green_y = np.loadtxt(greenfile, delimiter=' ', unpack=True, skiprows=1)
+red_frame_num, red_cell_id, red_gg_neighbours, red_rr_neighbours, red_gr_neighbours, red_x, red_y = np.loadtxt(redfile, delimiter=' ', unpack=True, skiprows=1)
 
 #collect into bins of 1600/8 = 200px
 dist = 1600/n  #number of horizontal pixels in each image segment
@@ -32,20 +53,46 @@ binlabels_red = np.digitize(red_x,binedges)
 #now for a specific bin
 #go through and find all the cells in each timeframe, ie. all the indices of green or red that fall into each bin
 
-greenlist = green_x.tolist()
-redlist = red_x.tolist()
+while time <:
 
-bin_num = 1
-while bin_num < binedges.shape[0] + 1:
-  green_indices = [i for i, x in enumerate(greenlist) if x == bin_num]  #returns an array of all instances of bin_num
-  red_indices = [i for i, x in enumerate(redlist) if x == bin_num]
+  greenlist = green_x.tolist()
+  redlist = red_x.tolist()
+
+  bin_total_hetero = np.zeros(n)
+  bin_total_gg = np.zeros(n)
+  bin_total_rr = np.zeros(n)
+
+
+  bin_num = 1
+  while bin_num < binedges.shape[0] + 1:
+    green_indices = [i for i, x in enumerate(greenlist) if x == bin_num]  #returns an array of all instances of bin_num
+    red_indices = [i for i, x in enumerate(redlist) if x == bin_num]
+  
+    gg_sum = []
+    rr_sum = []
+    hetero_sum = []
+  
+    for k in green_indices:
+      rr_sum.append(red_rr_neighbours[k]) 
+      gg_sum.append(red_gg_neighbours[k]) 
+      hetero_sum.append(red_gr_neighbours[k])
+    for k in red_indices:
+     gg_sum.append(red_gg_neighbours[k]) 
+      rr_sum.append(red_rr_neighbours[k]) 
+      hetero_sum.append(red_gr_neighbours[k])
+  
+    bin_total_hetero[(bin_num - 1)] = sum(hetero_sum)
+    bin_total_gg[(bin_num - 1)] = sum(gg)
+    bin_total_rr[(bin_num - 1)] = sum(rr)
+  
   bin_num = bin_num + 1
+time += 1
 
-plt.plot(frame_num, green_cells, linestyle='-', label='green cells', color='g')
-plt.plot(frame_num, red_cells, linestyle='-', label='red cells', color='r')
-plt.plot(frame_num, green_green_neighbours, label='green-green neighbours', color='c')
-plt.plot(frame_num, red_red_neighbours, label='red-red neighbours', color='m')
-plt.plot(frame_num, green_red_neighbours, label='green-red neighbours', color='k')
+#plt.plot(frame_num, green_cells, linestyle='-', label='green cells', color='g')
+#plt.plot(frame_num, red_cells, linestyle='-', label='red cells', color='r')
+#plt.plot(frame_num, green_green_neighbours, label='green-green neighbours', color='c')
+#plt.plot(frame_num, red_red_neighbours, label='red-red neighbours', color='m')
+#plt.plot(frame_num, green_red_neighbours, label='green-red neighbours', color='k')
 plt.xlabel('frame #')
 plt.ylabel('number')
 plt.legend(loc='upper right',prop={'size':7})
